@@ -260,6 +260,45 @@ def make_alloy_furnace():
     draw.rectangle([15, 4, 16, 7], fill=(50, 50, 60))
     return img
 
+def make_cable(body, core, accent, high_voltage=False):
+    """Compact cable node with a colored voltage/core indicator."""
+    img = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    # Compact housing and four cable terminals.
+    gradient_rect(draw, (5, 5, 26, 26), shade(body, 1.2), shade(body, 0.65))
+    draw_border(draw, (5, 5, 26, 26), body)
+    for box in [(1, 13, 7, 18), (24, 13, 31, 18), (13, 1, 18, 7), (13, 24, 18, 31)]:
+        draw.rectangle(box, fill=shade(body, 0.55))
+        draw.rectangle([box[0] + 1, box[1] + 1, box[2] - 1, box[3] - 1], fill=accent)
+    # Core ring and center glow distinguish voltage tiers.
+    draw.ellipse([9, 9, 22, 22], fill=shade(body, 0.5), outline=shade(accent, 1.2), width=1)
+    draw.ellipse([12, 12, 19, 19], fill=core, outline=shade(core, 1.4), width=1)
+    if high_voltage:
+        draw.line([(14, 14), (17, 17)], fill=(255, 255, 255, 190), width=1)
+        draw.line([(17, 14), (14, 17)], fill=(255, 255, 255, 190), width=1)
+    else:
+        draw.point((15, 15), fill=(255, 255, 255, 220))
+    return img
+
+def make_transformer():
+    """Industrial transformer with LV/HV terminals and conversion arrows."""
+    img = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    gradient_rect(draw, (3, 3, 28, 28), (170, 125, 55), (80, 55, 30))
+    draw_border(draw, (3, 3, 28, 28), (200, 155, 70))
+    # Transformer coils.
+    for x in (10, 16, 22):
+        draw.rectangle([x - 2, 9, x + 2, 23], outline=(235, 190, 90, 255), width=1)
+        draw.line([(x - 1, 11), (x + 1, 11)], fill=(255, 220, 130, 255), width=1)
+        draw.line([(x - 1, 21), (x + 1, 21)], fill=(110, 70, 30, 255), width=1)
+    # LV/HV terminals and center conversion mark.
+    draw.rectangle([1, 14, 5, 18], fill=(70, 150, 190, 255))
+    draw.rectangle([27, 14, 31, 18], fill=(220, 80, 45, 255))
+    draw.line([(6, 16), (9, 16)], fill=(120, 200, 230, 255), width=1)
+    draw.line([(23, 16), (26, 16)], fill=(255, 130, 70, 255), width=1)
+    draw.polygon([(13, 5), (18, 5), (16, 8)], fill=(255, 225, 130, 255))
+    return img
+
 
 if __name__ == "__main__":
     import os
@@ -279,6 +318,13 @@ if __name__ == "__main__":
         "sprites/blocks/ic2-battery.png": make_battery(),
         "sprites/blocks/ic2-macerator.png": make_macerator(),
         "sprites/blocks/ic2-alloy-furnace.png": make_alloy_furnace(),
+        "sprites/blocks/ic2-lv-cable.png": make_cable((85, 95, 105), (70, 180, 130), (110, 125, 135)),
+        "sprites/blocks/ic2-hv-cable.png": make_cable((80, 75, 85), (220, 85, 55), (135, 110, 125), True),
+        "sprites/blocks/ic2-transformer.png": make_transformer(),
+        "sprites/blocks/ic2-insulated-lv-cable.png": make_cable((55, 105, 105), (70, 220, 185), (100, 180, 170)),
+        "sprites/blocks/ic2-reinforced-hv-cable.png": make_cable((75, 65, 110), (190, 95, 235), (135, 115, 180), True),
+        "sprites/blocks/ic2-low-loss-hv-cable.png": make_cable((55, 95, 125), (80, 205, 245), (105, 165, 205), True),
+        "sprites/blocks/ic2-superconductor-cable.png": make_cable((125, 135, 150), (220, 245, 255), (180, 205, 225), True),
     }
 
     for path, img in sprites.items():

@@ -31,7 +31,14 @@ public final class EuJarContentHarness {
             "sprites/blocks/ic2-macerator.png",
             "sprites/blocks/ic2-alloy-furnace.png",
             "sprites/blocks/ic2-battery.png",
-            "sprites/blocks/ic2-solar-panel.png"
+            "sprites/blocks/ic2-solar-panel.png",
+            "sprites/blocks/ic2-lv-cable.png",
+            "sprites/blocks/ic2-hv-cable.png",
+            "sprites/blocks/ic2-transformer.png",
+            "sprites/blocks/ic2-insulated-lv-cable.png",
+            "sprites/blocks/ic2-reinforced-hv-cable.png",
+            "sprites/blocks/ic2-low-loss-hv-cable.png",
+            "sprites/blocks/ic2-superconductor-cable.png"
         );
 
         try (ZipFile zip = new ZipFile(jar)) {
