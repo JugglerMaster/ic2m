@@ -1,0 +1,17 @@
+{
+    type: AlloyFurnaceBlock,
+    name: "IC2 Alloy Furnace",
+    description: "Combines metals into alloys. Uses IC2 power.",
+    size: 1,
+    health: 150,
+    hasItems: true,
+    hasPower: false,
+    update: true,
+    solid: true,
+    itemCapacity: 4,
+    requirements: [
+        copper/40,
+        lead/20,
+        graphite/15
+    ]
+}

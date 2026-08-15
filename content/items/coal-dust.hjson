@@ -1,0 +1,10 @@
+{
+    type: Item,
+    name: "Coal Dust",
+    description: "Crushed coal. Can be smelted or used as fuel.",
+    color: "222222",
+    hardness: 0,
+    cost: 1,
+    flammability: 0.5,
+    explosive: 0
+}

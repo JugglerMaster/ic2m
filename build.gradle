@@ -1,0 +1,63 @@
+apply plugin: "java"
+
+sourceSets.main.java.srcDirs = ["src"]
+
+ext{
+    mindustryVersion = "v159.7"
+}
+
+repositories{
+    mavenCentral()
+
+    ivy{
+        url = 'https://github.com/'
+        patternLayout{ artifact(
+            '/[organisation]/[module]/releases/download/[revision]/dependencies.jar'
+        )}
+        metadataSources{ artifact() }
+
+        content{
+            includeVersion("Anuken", "Mindustry", mindustryVersion)
+        }
+    }
+}
+
+java{
+    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_17
+}
+
+dependencies{
+    compileOnly "Anuken:Mindustry:$mindustryVersion"
+}
+
+jar{
+    archiveFileName = "ic2m.jar"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from{
+        configurations.runtimeClasspath.collect{ it.isDirectory() ? it : zipTree(it) }
+    }
+
+    from(projectDir){
+        include "mod.hjson"
+        include "content/**"
+        include "sprites/**"
+    }
+}
+
+task deploy(type: Copy, dependsOn: jar){
+    def projectName = project.name
+    def os = System.getProperty("os.name").toLowerCase()
+    def dir
+    if(os.contains("linux")){
+        dir = new File(System.getenv("HOME"), ".local/share/Mindustry/mods")
+    }else if(os.contains("windows")){
+        dir = new File(System.getenv("APPDATA"), "Mindustry/mods")
+    }else{
+        dir = new File(System.getProperty("user.home"), "Library/Application Support/Mindustry/mods")
+    }
+    from jar.destinationDirectory
+    into dir
+    mkdir dir
+}

@@ -1,0 +1,17 @@
+{
+    type: SolarPanel,
+    name: "IC2 Solar Panel",
+    description: "Generates IC2 power from sunlight. Accepts upgrades to improve output and storage.",
+    size: 1,
+    health: 100,
+    hasItems: true,
+    hasPower: false,
+    update: true,
+    solid: true,
+    itemCapacity: 4,
+    requirements: [
+        copper/30,
+        lead/15,
+        graphite/10
+    ]
+}
