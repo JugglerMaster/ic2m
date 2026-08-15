@@ -6,5 +6,7 @@
     hardness: 0,
     cost: 1,
     flammability: 0,
-    explosive: 0
+    explosiveness: 0,
+    alwaysUnlocked: true,
+    research: titanium
 }
