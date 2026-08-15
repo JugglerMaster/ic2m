@@ -1,0 +1,18 @@
+{
+    type: "ic2m.Ic2CableBlock",
+    name: "IC2 LV Cable",
+    description: "Low-voltage EU cable. Transfers EU between adjacent IC2 machines and cable segments within 2 tiles.",
+    category: "power",
+    buildVisibility: "shown",
+    size: 1,
+    health: 60,
+    highVoltage: false,
+    nodeRange: 2,
+    transferRate: 10,
+    loss: 0.02,
+    cableCapacity: 100,
+    requirements: [
+        copper/3,
+        coal/1
+    ]
+}

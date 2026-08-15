@@ -10,8 +10,25 @@ Adds a **separate power system** (EU) to Mindustry, independent from vanilla pow
 
 ### Custom Power System
 - Completely separate from Mindustry's vanilla power network
-- Adjacent IC2 blocks share energy within 2 tiles (no cables needed)
+- LV machines share energy within 2 tiles, with optional LV cable relays
+- HV cables use power-pole style links over long distances
+- HV requires Step-Up and Step-Down transformers at the two endpoints
+- Cable loss, transfer rate, capacity, and range vary by cable tier
 - Energy displayed in block UI
+
+### EU Network
+
+| Component | Function |
+|---|---|
+| **LV Cable** | Short-range 2-tile EU transfer |
+| **HV Cable** | 16-tile long-range transfer |
+| **Transformer** | Converts LV to HV or HV to LV at 90% efficiency |
+| **Insulated LV Cable** | Higher-capacity LV cable with no cable loss |
+| **Reinforced HV Cable** | 20-tile, high-capacity HV cable |
+| **Low-Loss HV Cable** | Reduced-loss HV transfer |
+| **Superconductor Cable** | 24-tile, high-capacity, lossless HV transfer |
+
+HV cable links can be configured by tapping compatible cables or transformers. Machines also retain completed outputs in a small buffer until an adjacent block can receive them.
 
 ### Blocks
 
@@ -53,6 +70,15 @@ Produced by the Macerator from ores.
 ```
 
 Requires Java 17+.
+
+## Testing
+
+```bash
+./gradlew euTest              # EU transfer math
+./gradlew euIntegrationTest   # Headless cable and transformer world test
+./gradlew euOreTest           # Headless macerator and furnace test
+./gradlew euContentTest       # Shipped JAR content and asset test
+```
 
 ## How to Use
 

@@ -1,0 +1,20 @@
+{
+    type: "ic2m.Ic2CableBlock",
+    name: "IC2 Superconductor Cable",
+    description: "Late-game HV cable with zero transfer loss, high capacity, and 24-tile range.",
+    category: "power",
+    buildVisibility: "shown",
+    size: 1,
+    health: 180,
+    highVoltage: true,
+    nodeRange: 24,
+    transferRate: 40,
+    loss: 0,
+    cableCapacity: 300,
+    requirements: [
+        copper/10,
+        titanium/10,
+        graphite/5,
+        thorium/5
+    ]
+}

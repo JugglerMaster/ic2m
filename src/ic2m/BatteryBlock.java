@@ -10,6 +10,14 @@ public class BatteryBlock extends Ic2PowerBlock {
 
     public class BatteryBuild extends Ic2PowerBuilding {
         @Override
+        public byte version() { return 1; }
+
+        @Override
+        protected boolean readsOutputState(byte revision) { return false; }
+
+        @Override
+        protected boolean writesOutputState() { return false; }
+        @Override
         public void created() {
             super.created();
             maxEnergy = basePowerCapacity;

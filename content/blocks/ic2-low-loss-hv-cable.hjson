@@ -1,0 +1,20 @@
+{
+    type: "ic2m.Ic2CableBlock",
+    name: "IC2 Low-Loss HV Cable",
+    description: "HV cable optimized for reduced EU loss over long distances.",
+    category: "power",
+    buildVisibility: "shown",
+    size: 1,
+    health: 120,
+    highVoltage: true,
+    nodeRange: 16,
+    transferRate: 15,
+    loss: 0.005,
+    cableCapacity: 150,
+    requirements: [
+        copper/8,
+        lead/4,
+        graphite/6,
+        titanium/2
+    ]
+}

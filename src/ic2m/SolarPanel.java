@@ -168,6 +168,15 @@ public class SolarPanel extends Ic2PowerBlock {
         }
 
         @Override
+        public byte version() { return 1; }
+
+        @Override
+        protected boolean readsOutputState(byte revision) { return false; }
+
+        @Override
+        protected boolean writesOutputState() { return false; }
+
+        @Override
         public void read(Reads read, byte revision) {
             super.read(read, revision);
             efficiencyLevel = read.i();

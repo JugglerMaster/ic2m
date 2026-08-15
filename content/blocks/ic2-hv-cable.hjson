@@ -1,0 +1,19 @@
+{
+    type: "ic2m.Ic2CableBlock",
+    name: "IC2 HV Cable",
+    description: "High-voltage EU cable. Uses power-pole style links up to 16 tiles, but requires transformers at both ends.",
+    category: "power",
+    buildVisibility: "shown",
+    size: 1,
+    health: 100,
+    highVoltage: true,
+    nodeRange: 16,
+    transferRate: 10,
+    loss: 0.02,
+    cableCapacity: 100,
+    requirements: [
+        copper/5,
+        lead/3,
+        graphite/2
+    ]
+}

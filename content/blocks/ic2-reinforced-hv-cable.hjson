@@ -1,0 +1,19 @@
+{
+    type: "ic2m.Ic2CableBlock",
+    name: "IC2 Reinforced HV Cable",
+    description: "High-capacity HV cable with extended 20-tile power-pole range.",
+    category: "power",
+    buildVisibility: "shown",
+    size: 1,
+    health: 140,
+    highVoltage: true,
+    nodeRange: 20,
+    transferRate: 25,
+    loss: 0.02,
+    cableCapacity: 200,
+    requirements: [
+        copper/8,
+        lead/5,
+        titanium/3
+    ]
+}

@@ -2,6 +2,7 @@ package ic2m;
 
 import arc.func.Func;
 import arc.scene.ui.TextButton;
+import arc.scene.ui.Image;
 import arc.scene.ui.layout.Table;
 import arc.util.io.Reads;
 import arc.util.io.Writes;
@@ -25,6 +26,14 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
     public Item copperDust, leadDust, titaniumDust, thoriumDust, graphiteDust, coalDust;
     public Item copperIngot, leadIngot, titaniumIngot, thoriumIngot, graphiteIngot, coalIngot;
     public Item titaniumCarbide, thoriumAlloy;
+
+    public float powerForTier(int tier) {
+        return powerPerTick * (tier == 0 ? 1f : tier == 1 ? 1.6f : 2.4f);
+    }
+
+    public float craftTimeForTier(int tier) {
+        return craftTime / (tier == 0 ? 1f : tier == 1 ? 1.5f : 2.25f);
+    }
 
     public AlloyFurnaceBlock(String name) {
         super(name);
@@ -68,7 +77,8 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
     }
 
     private float progressOf(Building entity) {
-        return entity instanceof AlloyFurnaceBuild b ? b.progress / craftTime : 0f;
+        return entity instanceof AlloyFurnaceBuild b
+            ? b.progress / craftTimeForTier(b.upgradeTier) : 0f;
     }
 
     public Item ingotForDust(Item dust) {
@@ -115,21 +125,28 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
         public Item currentInput = null;
         public Item output = null;
         public int mode = MODE_SMELT;
+        public int upgradeTier = 0;
+
+        private static final int TIER2_COST = 10;
+        private static final int TIER3_COST = 10;
 
         @Override
         public void update() {
             super.update();
+            flushOutput();
             if (!enabled) return;
 
             if (output != null && currentInput != null) {
-                if (energy >= powerPerTick) {
-                    energy -= powerPerTick;
+                float power = powerForTier(upgradeTier);
+                if (energy >= power) {
+                    energy -= power;
                     progress += 1f;
-                    if (progress >= craftTime) {
-                        offload(output);
-                        progress = 0f;
-                        currentInput = null;
-                        output = null;
+                    if (progress >= craftTimeForTier(upgradeTier)) {
+                        if (storeOutput(output, 1)) {
+                            progress = 0f;
+                            currentInput = null;
+                            output = null;
+                        }
                     }
                 }
             } else if (mode == MODE_SMELT) {
@@ -174,7 +191,8 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
 
         @Override
         public float progress(){
-            return output != null && currentInput != null ? Math.min(progress / craftTime, 1f) : 0f;
+            return output != null && currentInput != null
+                ? Math.min(progress / craftTimeForTier(upgradeTier), 1f) : 0f;
         }
 
         @Override
@@ -187,6 +205,9 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
         public boolean acceptItem(Building source, Item item) {
             if (output != null && currentInput != null) return false;
             if (items.total() >= itemCapacity) return false;
+            ensureItems();
+            if (item == titaniumCarbide && upgradeTier == 0) return true;
+            if (item == thoriumAlloy && upgradeTier == 1) return true;
 
             if (mode == MODE_SMELT) {
                 return isDust(item);
@@ -212,26 +233,59 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
 
         @Override
         public void buildConfiguration(Table table) {
+            ensureItems();
             TextButton button = new TextButton("", Styles.defaultt);
             button.update(() -> button.setText(mode == MODE_SMELT ? "Mode: Smelting (dust -> ingot)" : "Mode: Alloying (ingot + ingot)"));
             button.clicked(() -> configure(mode == MODE_SMELT ? MODE_ALLOY : MODE_SMELT));
             table.add(button).size(260f, 50f).row();
             table.add(mode == MODE_SMELT ? "[#9cf7ff]Feed dusts; each dust smelts into its ingot." : "[#ffd37f]Recipes:[/] copper+lead -> surge alloy, titanium+graphite -> titanium carbide, thorium+lead -> thorium alloy").width(260f).wrap();
+            table.row();
+            table.add("Furnace Tier " + (upgradeTier + 1)).left().row();
+            table.add("Speed: " + String.format("%.0f%%", craftTime / craftTimeForTier(upgradeTier) * 100f)
+                + " | Power: " + String.format("%.1f", powerForTier(upgradeTier)) + " EU/t").left().row();
+            table.add(outputStatus()).left().row();
+            if (upgradeTier < 2) {
+                Item ingredient = upgradeTier == 0 ? titaniumCarbide : thoriumAlloy;
+                int cost = upgradeTier == 0 ? TIER2_COST : TIER3_COST;
+                table.button("Upgrade to Tier " + (upgradeTier + 2), Styles.defaultt, this::upgrade).size(260f, 40f).row();
+                table.add("Requires: " + cost + " " + ingredient.localizedName).left();
+                table.add(new Image(ingredient.uiIcon)).size(16f).padLeft(4).row();
+            } else {
+                table.add("Maximum tier").left();
+            }
+        }
+
+        boolean canUpgrade() {
+            ensureItems();
+            Item ingredient = upgradeTier == 0 ? titaniumCarbide : thoriumAlloy;
+            return upgradeTier < 2 && ingredient != null && items.get(ingredient) >= (upgradeTier == 0 ? TIER2_COST : TIER3_COST);
+        }
+
+        void upgrade() {
+            if (!canUpgrade()) return;
+            Item ingredient = upgradeTier == 0 ? titaniumCarbide : thoriumAlloy;
+            items.remove(ingredient, upgradeTier == 0 ? TIER2_COST : TIER3_COST);
+            upgradeTier++;
         }
 
         @Override
-        public byte version() { return 1; }
+        public byte version() { return 3; }
+
+        @Override
+        protected boolean readsOutputState(byte revision) { return revision >= 3; }
 
         @Override
         public void write(Writes write) {
             super.write(write);
             write.i(mode);
+            write.i(upgradeTier);
         }
 
         @Override
         public void read(Reads read, byte revision) {
             super.read(read, revision);
             if (revision >= 1) mode = read.i();
+            if (revision >= 2) upgradeTier = read.i();
         }
     }
 }

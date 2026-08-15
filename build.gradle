@@ -1,6 +1,15 @@
 apply plugin: "java"
 
 sourceSets.main.java.srcDirs = ["src"]
+sourceSets.main.java.exclude("test/**")
+
+sourceSets {
+    test {
+        java.srcDirs = ["src/test/java"]
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
 
 ext{
     mindustryVersion = "v159.7"
@@ -29,6 +38,8 @@ java{
 
 dependencies{
     compileOnly "Anuken:Mindustry:$mindustryVersion"
+    testCompileOnly "Anuken:Mindustry:$mindustryVersion"
+    testRuntimeOnly "Anuken:Mindustry:$mindustryVersion"
 }
 
 jar{
@@ -60,4 +71,30 @@ task deploy(type: Copy, dependsOn: jar){
     from jar.destinationDirectory
     into dir
     mkdir dir
+}
+
+task euTest(type: JavaExec, dependsOn: testClasses){
+    description = "Runs the standalone EU transfer regression harness."
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ic2m.EuTransferHarness"
+}
+
+task euIntegrationTest(type: JavaExec, dependsOn: [jar, testClasses]){
+    description = "Runs the headless Mindustry EU transfer smoke test."
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ic2m.EuIntegrationHarness"
+    systemProperty "user.home", file("${buildDir}/eu-test-home").absolutePath
+}
+
+task euOreTest(type: JavaExec, dependsOn: [jar, testClasses]){
+    description = "Runs the headless IC2 ore processing regression harness."
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ic2m.EuOreProcessingHarness"
+    systemProperty "user.home", file("${buildDir}/eu-test-home").absolutePath
+}
+
+task euContentTest(type: JavaExec, dependsOn: jar){
+    description = "Verifies runtime content and assets are packaged in the mod JAR."
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ic2m.EuJarContentHarness"
 }

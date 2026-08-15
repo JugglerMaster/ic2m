@@ -1,0 +1,19 @@
+{
+    type: "ic2m.Ic2TransformerBlock",
+    name: "IC2 Transformer",
+    description: "Converts between LV machines and the long-range HV cable network. Configure one end as Step-Up and the other as Step-Down.",
+    category: "power",
+    buildVisibility: "shown",
+    size: 1,
+    health: 180,
+    hasItems: false,
+    hasPower: false,
+    update: true,
+    solid: true,
+    requirements: [
+        copper/20,
+        lead/10,
+        graphite/10,
+        titanium/5
+    ]
+}

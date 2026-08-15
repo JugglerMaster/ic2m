@@ -1,0 +1,18 @@
+{
+    type: "ic2m.Ic2CableBlock",
+    name: "IC2 Insulated LV Cable",
+    description: "Improved LV cable with higher transfer capacity and no cable loss. Range remains 2 tiles.",
+    category: "power",
+    buildVisibility: "shown",
+    size: 1,
+    health: 80,
+    highVoltage: false,
+    nodeRange: 2,
+    transferRate: 15,
+    loss: 0,
+    cableCapacity: 150,
+    requirements: [
+        copper/4,
+        graphite/2
+    ]
+}
