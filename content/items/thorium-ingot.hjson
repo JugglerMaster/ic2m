@@ -1,0 +1,13 @@
+{
+    type: Item,
+    name: "Thorium Ingot",
+    description: "A bar of smelted thorium. Radioactive.",
+    color: "4a7a4a",
+    hardness: 0,
+    cost: 1,
+    flammability: 0,
+    explosiveness: 0.1,
+    radioactivity: 0.3,
+    alwaysUnlocked: true,
+    research: thorium-dust
+}

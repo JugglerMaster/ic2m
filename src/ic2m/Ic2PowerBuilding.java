@@ -1,9 +1,14 @@
 package ic2m;
 
+import arc.graphics.Color;
+import arc.graphics.g2d.Draw;
+import arc.graphics.g2d.Fill;
 import arc.util.io.Reads;
 import arc.util.io.Writes;
 import mindustry.Vars;
 import mindustry.gen.Building;
+import mindustry.graphics.Layer;
+import mindustry.graphics.Pal;
 import mindustry.type.Item;
 
 public class Ic2PowerBuilding extends Building {
@@ -59,6 +64,41 @@ public class Ic2PowerBuilding extends Building {
                 }
             }
         }
+    }
+
+    @Override
+    public void draw() {
+        super.draw();
+        drawEnergyBar();
+        drawProgressBar();
+    }
+
+    /** Progress between 0 and 1 for crafting machines; 0 for plain power blocks. */
+    @Override
+    public float progress() { return 0f; }
+
+    protected void drawEnergyBar() {
+        drawBar(x, y - block.size * Vars.tilesize / 2f + 3f, getEnergyPercentage(), Pal.powerBar);
+    }
+
+    protected void drawProgressBar() {
+        float p = progress();
+        if (p <= 0f) return;
+        drawBar(x, y - block.size * Vars.tilesize / 2f + 5.5f, p, Pal.accent);
+    }
+
+    protected void drawBar(float cx, float cy, float fraction, Color color) {
+        float size = block.size * Vars.tilesize;
+        float w = size - 4f;
+        float h = 2.4f;
+        float z = Draw.z();
+        Draw.z(Layer.power + 1);
+        Draw.color(0f, 0f, 0f, 0.7f);
+        Fill.rect(cx, cy, w, h);
+        Draw.color(color);
+        Fill.rect(cx - w / 2f * (1f - fraction), cy, w * fraction, h);
+        Draw.color();
+        Draw.z(z);
     }
 
     @Override

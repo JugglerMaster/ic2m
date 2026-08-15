@@ -1,0 +1,13 @@
+{
+    type: Item,
+    name: "Thorium Alloy",
+    description: "A radioactive lead and thorium alloy. Produced in the furnace's alloying mode.",
+    color: "6ebe6e",
+    hardness: 0,
+    cost: 1,
+    flammability: 0,
+    explosiveness: 0.1,
+    radioactivity: 0.5,
+    alwaysUnlocked: true,
+    research: thorium-ingot
+}

@@ -1,0 +1,12 @@
+{
+    type: Item,
+    name: "Titanium Ingot",
+    description: "A bar of smelted titanium. Used in the furnace's alloying mode.",
+    color: "6ca0dc",
+    hardness: 0,
+    cost: 1,
+    flammability: 0,
+    explosiveness: 0,
+    alwaysUnlocked: true,
+    research: titanium-dust
+}

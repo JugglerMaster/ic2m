@@ -1,9 +1,13 @@
 package ic2m;
 
+import arc.func.Func;
 import mindustry.Vars;
 import mindustry.content.Items;
 import mindustry.gen.Building;
+import mindustry.graphics.Pal;
 import mindustry.type.Item;
+import mindustry.ui.Bar;
+import mindustry.world.meta.Stat;
 
 public class MaceratorBlock extends Ic2PowerBlock {
     public float powerPerTick = 5f;
@@ -13,22 +17,42 @@ public class MaceratorBlock extends Ic2PowerBlock {
         super(name);
         basePowerCapacity = 200f;
         hasItems = true;
+
+        addBar("ic2progress", (Func<Building, Bar>)entity -> new Bar(
+            () -> "Progress " + (int)(progressOf(entity) * 100f) + "%",
+            () -> Pal.accent,
+            () -> progressOf(entity)
+        ));
+    }
+
+    private float progressOf(Building entity){
+        return entity instanceof MaceratorBuild b ? b.progress / craftTime : 0f;
     }
 
     public Item getDustForOre(Item ore) {
-        if (ore == Items.copper) return Vars.content.item("copper-dust");
-        if (ore == Items.lead) return Vars.content.item("lead-dust");
-        if (ore == Items.graphite) return Vars.content.item("graphite-dust");
-        if (ore == Items.coal) return Vars.content.item("coal-dust");
-        if (ore == Items.titanium) return Vars.content.item("titanium-dust");
-        if (ore == Items.thorium) return Vars.content.item("thorium-dust");
+        if (ore == Items.copper) return dust("copper-dust");
+        if (ore == Items.lead) return dust("lead-dust");
+        if (ore == Items.graphite) return dust("graphite-dust");
+        if (ore == Items.coal) return dust("coal-dust");
+        if (ore == Items.titanium) return dust("titanium-dust");
+        if (ore == Items.thorium) return dust("thorium-dust");
         if (ore == Items.sand) return Items.sand;
         if (ore == Items.scrap) return Items.scrap;
         return null;
     }
 
+    private Item dust(String suffix) {
+        return Vars.content.items().find(i -> i.name.endsWith("-" + suffix));
+    }
+
     public boolean isOre(Item item) {
         return getDustForOre(item) != null;
+    }
+
+    @Override
+    public void setStats(){
+        super.setStats();
+        stats.add(Stat.powerUse, "[orange]@[] EU/t", String.format("%.1f", powerPerTick));
     }
 
     public class MaceratorBuild extends Ic2PowerBuilding {
@@ -69,6 +93,11 @@ public class MaceratorBlock extends Ic2PowerBlock {
                     }
                 }
             }
+        }
+
+        @Override
+        public float progress(){
+            return currentOre != null && outputCount > 0 ? Math.min(progress / craftTime, 1f) : 0f;
         }
 
         @Override

@@ -1,0 +1,12 @@
+{
+    type: Item,
+    name: "Copper Ingot",
+    description: "A bar of smelted copper. Used in the furnace's alloying mode.",
+    color: "d48541",
+    hardness: 0,
+    cost: 1,
+    flammability: 0,
+    explosiveness: 0,
+    alwaysUnlocked: true,
+    research: copper-dust
+}

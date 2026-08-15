@@ -11,6 +11,7 @@ import mindustry.content.Items;
 import mindustry.gen.Building;
 import mindustry.gen.Unit;
 import mindustry.type.Item;
+import mindustry.world.meta.Stat;
 
 public class SolarPanel extends Ic2PowerBlock {
     public float basePowerPerTick = 1f;
@@ -28,6 +29,12 @@ public class SolarPanel extends Ic2PowerBlock {
     @Override
     public void init() {
         super.init();
+    }
+
+    @Override
+    public void setStats(){
+        super.setStats();
+        stats.add(Stat.basePowerGeneration, "[orange]@[] EU/t", String.format("%.1f", basePowerPerTick));
     }
 
     public class SolarPanelBuild extends Ic2PowerBuilding {
@@ -57,10 +64,7 @@ public class SolarPanel extends Ic2PowerBlock {
             float multiplier = Vars.state.rules.solarMultiplier;
             if (multiplier > 0f) {
                 float generated = currentPowerPerTick * multiplier;
-                float overflow = acceptEnergy(generated);
-                if (overflow > 0f) {
-                    energy += overflow;
-                }
+                energy = Math.min(maxEnergy, energy + generated);
             }
         }
 
