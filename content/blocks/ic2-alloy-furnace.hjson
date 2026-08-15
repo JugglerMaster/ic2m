@@ -2,6 +2,8 @@
     type: AlloyFurnaceBlock,
     name: "IC2 Alloy Furnace",
     description: "Combines metals into alloys. Uses IC2 power.",
+    category: "crafting",
+    buildVisibility: "shown",
     size: 1,
     health: 150,
     hasItems: true,

@@ -2,6 +2,8 @@
     type: MaceratorBlock,
     name: "IC2 Macerator",
     description: "Doubles ore output. Processes ores into dusts using IC2 power.",
+    category: "crafting",
+    buildVisibility: "shown",
     size: 1,
     health: 150,
     hasItems: true,

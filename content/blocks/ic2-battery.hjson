@@ -2,6 +2,8 @@
     type: BatteryBlock,
     name: "IC2 RE Battery",
     description: "Stores IC2 power. Receives energy from adjacent generators.",
+    category: "power",
+    buildVisibility: "shown",
     size: 1,
     health: 100,
     hasItems: false,
