@@ -238,7 +238,19 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
             button.update(() -> button.setText(mode == MODE_SMELT ? "Mode: Smelting (dust -> ingot)" : "Mode: Alloying (ingot + ingot)"));
             button.clicked(() -> configure(mode == MODE_SMELT ? MODE_ALLOY : MODE_SMELT));
             table.add(button).size(260f, 50f).row();
-            table.add(mode == MODE_SMELT ? "[#9cf7ff]Feed dusts; each dust smelts into its ingot." : "[#ffd37f]Recipes:[/] copper+lead -> surge alloy, titanium+graphite -> titanium carbide, thorium+lead -> thorium alloy").width(260f).wrap();
+            table.add("Recipes").left().row();
+            if (mode == MODE_SMELT) {
+                addRecipe(table, copperDust, copperIngot);
+                addRecipe(table, leadDust, leadIngot);
+                addRecipe(table, graphiteDust, graphiteIngot);
+                addRecipe(table, coalDust, coalIngot);
+                addRecipe(table, titaniumDust, titaniumIngot);
+                addRecipe(table, thoriumDust, thoriumIngot);
+            } else {
+                addAlloyRecipe(table, copperIngot, leadIngot, Items.surgeAlloy);
+                addAlloyRecipe(table, titaniumIngot, graphiteIngot, titaniumCarbide);
+                addAlloyRecipe(table, thoriumIngot, leadIngot, thoriumAlloy);
+            }
             table.row();
             table.add("Furnace Tier " + (upgradeTier + 1)).left().row();
             table.add("Speed: " + String.format("%.0f%%", craftTime / craftTimeForTier(upgradeTier) * 100f)
@@ -253,6 +265,16 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
             } else {
                 table.add("Maximum tier").left();
             }
+        }
+
+        private void addRecipe(Table table, Item input, Item output) {
+            if (input == null || output == null) return;
+            table.add(input.localizedName + " -> " + output.localizedName).left().row();
+        }
+
+        private void addAlloyRecipe(Table table, Item a, Item b, Item output) {
+            if (a == null || b == null || output == null) return;
+            table.add(a.localizedName + " + " + b.localizedName + " -> " + output.localizedName).left().row();
         }
 
         boolean canUpgrade() {

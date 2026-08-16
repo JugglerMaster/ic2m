@@ -174,6 +174,15 @@ public class MaceratorBlock extends Ic2PowerBlock {
             table.add("Macerator Tier " + (upgradeTier + 1)).left().row();
             table.add("Speed: " + String.format("%.0f%%", craftTime / craftTimeForTier(upgradeTier) * 100f)
                 + " | Power: " + String.format("%.1f", powerForTier(upgradeTier)) + " EU/t").left().row();
+            table.add("Recipes").left().row();
+            addRecipe(table, Items.copper, dust("copper-dust"));
+            addRecipe(table, Items.lead, dust("lead-dust"));
+            addRecipe(table, Items.graphite, dust("graphite-dust"));
+            addRecipe(table, Items.coal, dust("coal-dust"));
+            addRecipe(table, Items.titanium, dust("titanium-dust"));
+            addRecipe(table, Items.thorium, dust("thorium-dust"));
+            addRecipe(table, Items.sand, Items.sand);
+            addRecipe(table, Items.scrap, Items.scrap);
             table.add(outputStatus()).left().row();
             if (upgradeTier < 2) {
                 Item ingredient = upgradeTier == 0 ? titaniumCarbide : thoriumAlloy;
@@ -184,6 +193,11 @@ public class MaceratorBlock extends Ic2PowerBlock {
             } else {
                 table.add("Maximum tier").left();
             }
+        }
+
+        private void addRecipe(Table table, Item input, Item output) {
+            if (output == null) return;
+            table.add(input.localizedName + " -> 2 " + output.localizedName).left().row();
         }
 
         @Override
