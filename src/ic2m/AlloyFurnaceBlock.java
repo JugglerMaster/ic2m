@@ -23,9 +23,9 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
     public float powerPerTick = 5f;
     public float craftTime = 180f;
 
-    Item copperDust, leadDust, titaniumDust, thoriumDust, graphiteDust, coalDust;
-    Item copperIngot, leadIngot, titaniumIngot, thoriumIngot, graphiteIngot, coalIngot;
-    Item titaniumCarbide, thoriumAlloy;
+    transient Item copperDust, leadDust, titaniumDust, thoriumDust, graphiteDust, coalDust;
+    transient Item copperIngot, leadIngot, titaniumIngot, thoriumIngot, graphiteIngot, coalIngot;
+    transient Item titaniumCarbide, thoriumAlloy;
 
     public float powerForTier(int tier) {
         return powerPerTick * (tier == 0 ? 1f : tier == 1 ? 1.6f : 2.4f);

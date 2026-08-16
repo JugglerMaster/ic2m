@@ -1,6 +1,7 @@
 package ic2m;
 
 import java.io.File;
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.zip.ZipFile;
 
@@ -46,6 +47,14 @@ public final class EuJarContentHarness {
                 if (zip.getEntry(path) == null) throw new AssertionError("missing JAR entry: " + path);
             }
         }
-        System.out.println("JAR content harness passed " + required.size() + " checks.");
+        checkTransient("copperDust", ic2m.AlloyFurnaceBlock.class);
+        checkTransient("titaniumCarbide", ic2m.MaceratorBlock.class);
+        System.out.println("JAR content harness passed " + (required.size() + 2) + " checks.");
+    }
+
+    private static void checkTransient(String field, Class<?> type) throws Exception {
+        if (!Modifier.isTransient(type.getDeclaredField(field).getModifiers())) {
+            throw new AssertionError(type.getSimpleName() + "." + field + " must be transient");
+        }
     }
 }

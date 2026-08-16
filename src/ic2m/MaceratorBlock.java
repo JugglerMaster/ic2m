@@ -17,7 +17,7 @@ import mindustry.world.meta.Stat;
 public class MaceratorBlock extends Ic2PowerBlock {
     public float powerPerTick = 5f;
     public float craftTime = 180f;
-    Item titaniumCarbide, thoriumAlloy;
+    transient Item titaniumCarbide, thoriumAlloy;
 
     public MaceratorBlock(String name) {
         super(name);
