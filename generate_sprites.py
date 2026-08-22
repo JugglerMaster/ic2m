@@ -300,6 +300,39 @@ def make_transformer():
     return img
 
 
+# === POWER ARMOR SUIT (mech) SPRITES ===
+
+def make_power_armor_body():
+    """Mech body / torso of the power armor suit."""
+    img = Image.new('RGBA', (40, 40), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([14, 10, 26, 30], fill=(90, 120, 150), outline=(170, 210, 240, 255))
+    draw.rectangle([16, 4, 24, 12], fill=(110, 150, 180), outline=(190, 225, 250, 255))
+    draw.rectangle([10, 12, 16, 20], fill=(80, 110, 140))
+    draw.rectangle([24, 12, 30, 20], fill=(80, 110, 140))
+    draw.rectangle([8, 14, 12, 28], fill=(85, 115, 145))
+    draw.rectangle([28, 14, 32, 28], fill=(85, 115, 145))
+    draw.ellipse([17, 16, 23, 22], fill=(120, 230, 255, 255))
+    return img
+
+def make_power_armor_leg():
+    """Mech legs of the power armor suit."""
+    img = Image.new('RGBA', (40, 40), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([14, 18, 19, 36], fill=(70, 95, 120), outline=(150, 190, 220, 255))
+    draw.rectangle([21, 18, 26, 36], fill=(70, 95, 120), outline=(150, 190, 220, 255))
+    draw.rectangle([12, 34, 20, 38], fill=(60, 85, 110))
+    draw.rectangle([20, 34, 28, 38], fill=(60, 85, 110))
+    return img
+
+def make_power_armor_base():
+    """Stationary base shadow of the power armor suit."""
+    img = Image.new('RGBA', (40, 40), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.ellipse([8, 30, 32, 40], fill=(50, 70, 90, 130))
+    return img
+
+
 if __name__ == "__main__":
     import os
     os.makedirs("sprites/items", exist_ok=True)
@@ -325,6 +358,9 @@ if __name__ == "__main__":
         "sprites/blocks/ic2-reinforced-hv-cable.png": make_cable((75, 65, 110), (190, 95, 235), (135, 115, 180), True),
         "sprites/blocks/ic2-low-loss-hv-cable.png": make_cable((55, 95, 125), (80, 205, 245), (105, 165, 205), True),
         "sprites/blocks/ic2-superconductor-cable.png": make_cable((125, 135, 150), (220, 245, 255), (180, 205, 225), True),
+        "sprites/ic2m-power-armor.png": make_power_armor_body(),
+        "sprites/ic2m-power-armor-leg.png": make_power_armor_leg(),
+        "sprites/ic2m-power-armor-base.png": make_power_armor_base(),
     }
 
     for path, img in sprites.items():

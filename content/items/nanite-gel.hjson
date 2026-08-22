@@ -1,0 +1,10 @@
+{
+    name: "nanite-gel",
+    description: "Self-replicating nanite gel. Consumed by the Power Armor Suit's repair system on each respawn.",
+    color: "8d6bff",
+    hardness: 0,
+    cost: 1,
+    flammability: 0.1,
+    explosiveness: 0,
+    alwaysUnlocked: false
+}

@@ -98,3 +98,10 @@ task euContentTest(type: JavaExec, dependsOn: jar){
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ic2m.EuJarContentHarness"
 }
+
+task powerArmorTest(type: JavaExec, dependsOn: [jar, testClasses]){
+    description = "Headless smoke test for the Power Armor Suit + Bench wiring."
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ic2m.PowerArmorHarness"
+    systemProperty "user.home", file("${buildDir}/pa-test-home").absolutePath
+}
