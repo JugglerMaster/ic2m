@@ -1,6 +1,6 @@
 {
     type: "ic2m.Ic2CableBlock",
-    name: "IC2 Superconductor Cable",
+    name: "ic2-superconductor-cable",
     description: "Late-game HV cable with zero transfer loss, high capacity, and 24-tile range.",
     category: "power",
     buildVisibility: "shown",

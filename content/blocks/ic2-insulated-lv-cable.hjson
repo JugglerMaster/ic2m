@@ -1,6 +1,6 @@
 {
     type: "ic2m.Ic2CableBlock",
-    name: "IC2 Insulated LV Cable",
+    name: "ic2-insulated-lv-cable",
     description: "Improved LV cable with higher transfer capacity and no cable loss. Range remains 2 tiles.",
     category: "power",
     buildVisibility: "shown",

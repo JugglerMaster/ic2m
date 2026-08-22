@@ -1,6 +1,6 @@
 {
     type: "ic2m.Ic2CableBlock",
-    name: "IC2 HV Cable",
+    name: "ic2-hv-cable",
     description: "High-voltage EU cable. Uses power-pole style links up to 16 tiles, but requires transformers at both ends.",
     category: "power",
     buildVisibility: "shown",

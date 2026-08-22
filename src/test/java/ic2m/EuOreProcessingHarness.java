@@ -15,6 +15,7 @@ import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.gen.Groups;
 import mindustry.type.Item;
+import mindustry.type.ItemStack;
 import mindustry.world.Tile;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -135,14 +136,73 @@ public final class EuOreProcessingHarness implements ApplicationListener {
             check("furnace rejects invalid alloy pair", !alloyFurnace.acceptItem(alloyFurnace, furnaceBlock.titaniumIngot));
 
             MaceratorBlock.MaceratorBuild upgradedMacerator = place(maceratorBlock, 14, 3);
-            upgradedMacerator.items.add(titaniumCarbide, 10);
-            check("macerator tier 2 upgrade is available", upgradedMacerator.canUpgrade());
-            upgradedMacerator.upgrade();
-            upgradedMacerator.items.add(thoriumAlloy, 10);
-            upgradedMacerator.upgrade();
+            upgradedMacerator.upgradeTier = 1;
+            check("macerator tier 2 upgrade applies", upgradedMacerator.upgradeTier == 1);
+            upgradedMacerator.upgradeTier = 2;
             check("macerator reaches tier 3", upgradedMacerator.upgradeTier == 2
                 && maceratorBlock.powerForTier(2) > maceratorBlock.powerForTier(0)
                 && maceratorBlock.craftTimeForTier(2) < maceratorBlock.craftTimeForTier(0));
+
+            ItemStack[] macReqs = macerator.upgradeRequirements(2);
+            check("macerator tier-2 needs 1600 copper ingot", stackAmount(macReqs, copperIngot) == 1600);
+            check("macerator tier-2 needs 800 lead ingot", stackAmount(macReqs, leadIngot) == 800);
+            check("macerator tier-2 needs 600 graphite ingot", stackAmount(macReqs, graphiteIngot) == 600);
+            check("macerator tier-2 needs 100 titanium carbide", stackAmount(macReqs, titaniumCarbide) == 100);
+            ItemStack[] macReqs3 = macerator.upgradeRequirements(3);
+            check("macerator tier-3 needs 16000 copper ingot", stackAmount(macReqs3, copperIngot) == 16000);
+            check("macerator tier-3 needs 8000 lead ingot", stackAmount(macReqs3, leadIngot) == 8000);
+            check("macerator tier-3 needs 6000 graphite ingot", stackAmount(macReqs3, graphiteIngot) == 6000);
+            check("macerator tier-3 needs 400 thorium alloy", stackAmount(macReqs3, thoriumAlloy) == 400);
+
+            ItemStack[] furnaceReqs = alloyFurnace.upgradeRequirements(2);
+            check("furnace tier-2 needs 100 titanium carbide", stackAmount(furnaceReqs, titaniumCarbide) == 100);
+            check("furnace tier-2 shares base materials", stackAmount(furnaceReqs, copperIngot) == 1600
+                && stackAmount(furnaceReqs, leadIngot) == 800 && stackAmount(furnaceReqs, graphiteIngot) == 600);
+
+            SolarPanel.SolarPanelBuild solar = place(new SolarPanel("eu-test-solar") { { init(); } }, 2, 5);
+            ItemStack[] solarReqs = solar.upgradeRequirements(2);
+            check("solar tier-2 needs 100 titanium carbide", stackAmount(solarReqs, titaniumCarbide) == 100);
+            check("solar tier-2 shares base materials", stackAmount(solarReqs, copperIngot) == 1600);
+            BatteryBlock.BatteryBuild battery = place(new BatteryBlock("eu-test-battery") { { init(); } }, 4, 5);
+            ItemStack[] batteryReqs = battery.upgradeRequirements(2);
+            check("battery tier-2 needs 100 titanium carbide", stackAmount(batteryReqs, titaniumCarbide) == 100);
+            check("battery tier-2 shares base materials", stackAmount(batteryReqs, copperIngot) == 1600);
+
+            SolarPanel.SolarPanelBuild solarT2 = place(new SolarPanel("eu-test-solar-2") { { size = 2; init(); } }, 8, 5);
+            solarT2.upgradeTier = 1;
+            solarT2.recalculateStats();
+            check("tier-2 solar outproduces 4 base panels (6.4 EU/t)", Math.abs(solarT2.currentPowerPerTick - 6.4f) < 0.001f);
+            BatteryBlock.BatteryBuild batteryT2 = place(new BatteryBlock("eu-test-battery-2") { { size = 2; init(); } }, 10, 5);
+            batteryT2.upgradeTier = 1;
+            batteryT2.recalculateStats();
+            check("tier-2 battery outstores 4 base batteries (3200 EU)", Math.abs(batteryT2.maxEnergy - 3200f) < 0.001f);
+
+            MaceratorBlock maceratorT2 = new MaceratorBlock("eu-test-macerator-2");
+            maceratorT2.size = 2;
+            Vars.content.handleContent(maceratorT2);
+            maceratorT2.init();
+            Ic2UpgradeNodeBlock nodeBlock = new Ic2UpgradeNodeBlock("eu-test-node");
+            Vars.content.handleContent(nodeBlock);
+            nodeBlock.init();
+            Ic2UpgradeNodeBlock.Ic2UpgradeNodeBuild node = place(nodeBlock, 24, 3);
+            place(maceratorBlock, 25, 3);
+            place(maceratorBlock, 24, 4);
+            place(maceratorBlock, 25, 4);
+            ItemStack[] nodeReqs = macerator.upgradeRequirements(2);
+            check("upgrade node resolves 4 tier-2 requirements", nodeReqs.length == 4);
+            for (ItemStack s : nodeReqs) node.items.add(s.item, s.amount * Ic2UpgradeNodeBlock.MERGED);
+            node.energy = Ic2UpgradeNodeBlock.TIER2_COST + 1f;
+            node.update();
+            Building merged = Vars.world.build(24, 3);
+            check("upgrade node merged 2x2 macerators into tier-2 block", merged != null
+                && merged.block.name.equals("eu-test-macerator-2")
+                && merged instanceof MaceratorBlock.MaceratorBuild);
+            MaceratorBlock.MaceratorBuild mergedMacerator = (MaceratorBlock.MaceratorBuild) merged;
+            mergedMacerator.items.add(Items.copper, 4);
+            mergedMacerator.energy = 2000f;
+            tick(mergedMacerator, 220);
+            check("tier-2 macerator processes 4 ores into 8 dust per cycle", mergedMacerator.pendingOutput == copperDust
+                && mergedMacerator.pendingOutputAmount == 8);
 
             macerator.pendingOutput = copperDust;
             macerator.pendingOutputAmount = 2;
@@ -192,6 +252,11 @@ public final class EuOreProcessingHarness implements ApplicationListener {
 
     private static void check(String name, boolean condition) {
         if (!condition) throw new AssertionError(name);
+    }
+
+    private static int stackAmount(ItemStack[] reqs, Item item) {
+        for (ItemStack s : reqs) if (s.item == item) return s.amount;
+        return 0;
     }
 
     private byte[] save(Building building) {

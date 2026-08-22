@@ -7,8 +7,10 @@ import arc.scene.ui.layout.Table;
 import mindustry.Vars;
 import mindustry.gen.Building;
 import mindustry.gen.Unit;
+import mindustry.graphics.Drawf;
 import mindustry.graphics.Layer;
 import mindustry.graphics.Pal;
+import mindustry.world.meta.Stat;
 import arc.util.io.Reads;
 import arc.util.io.Writes;
 
@@ -32,6 +34,30 @@ public class Ic2CableBlock extends Ic2PowerBlock {
     @Override
     public void init() {
         super.init();
+    }
+
+    @Override
+    public void setStats(){
+        super.setStats();
+        stats.add(Stat.powerUse, (int) transferRate + " EU/t, " + (int)(loss * 100f) + "% loss");
+    }
+
+    @Override
+    protected float statsCapacity(){
+        return cableCapacity;
+    }
+
+    @Override
+    protected int statsRange(){
+        return (int) nodeRange;
+    }
+
+    @Override
+    public void drawPlace(int x, int y, int rotation, boolean valid) {
+        super.drawPlace(x, y, rotation, valid);
+        float cx = x * Vars.tilesize + Vars.tilesize / 2f;
+        float cy = y * Vars.tilesize + Vars.tilesize / 2f;
+        Drawf.dashCircle(cx, cy, nodeRange * Vars.tilesize, highVoltage ? Pal.powerLight : Pal.accent);
     }
 
     public class Ic2CableBuild extends Ic2PowerBuilding {

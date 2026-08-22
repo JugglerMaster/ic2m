@@ -1,6 +1,6 @@
 {
     type: "ic2m.BatteryBlock",
-    name: "IC2 RE Battery",
+    name: "ic2-re-battery",
     description: "Stores IC2 power. Receives and provides energy from/to IC2 blocks within 2 tiles.",
     category: "power",
     buildVisibility: "shown",

@@ -1,6 +1,5 @@
 {
-    type: Item,
-    name: "Copper Ingot",
+    name: "copper-ingot",
     description: "A bar of smelted copper. Used in the furnace's alloying mode.",
     color: "d48541",
     hardness: 0,

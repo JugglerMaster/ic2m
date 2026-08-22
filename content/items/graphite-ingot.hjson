@@ -1,6 +1,5 @@
 {
-    type: Item,
-    name: "Graphite Ingot",
+    name: "graphite-ingot",
     description: "A bar of pressed graphite. Used in the furnace's alloying mode.",
     color: "333333",
     hardness: 0,

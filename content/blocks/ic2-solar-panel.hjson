@@ -1,6 +1,6 @@
 {
     type: "ic2m.SolarPanel",
-    name: "IC2 Solar Panel",
+    name: "ic2-solar-panel",
     description: "Generates IC2 power from sunlight. Distributes to IC2 blocks within 2 tiles. Tap to upgrade output and storage.",
     category: "power",
     buildVisibility: "shown",
@@ -10,7 +10,7 @@
     hasPower: false,
     update: true,
     solid: true,
-    itemCapacity: 4,
+    itemCapacity: 200,
     requirements: [
         copper/30,
         lead/15,

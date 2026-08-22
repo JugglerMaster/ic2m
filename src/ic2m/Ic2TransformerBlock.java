@@ -6,6 +6,7 @@ import arc.util.io.Writes;
 import mindustry.Vars;
 import mindustry.gen.Building;
 import mindustry.gen.Unit;
+import mindustry.world.meta.Stat;
 
 /** Converts between the short-range LV network and long-range HV cables. */
 public class Ic2TransformerBlock extends Ic2PowerBlock {
@@ -20,6 +21,12 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
         basePowerCapacity = 500f;
     }
 
+    @Override
+    public void setStats(){
+        super.setStats();
+        stats.add(new Stat("Efficiency"), (int)(CONVERSION_EFFICIENCY * 100f) + "%");
+    }
+
     public class Ic2TransformerBuild extends Ic2PowerBuilding {
         public int mode = MODE_STEP_UP;
 
@@ -32,7 +39,7 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
         @Override
         protected void distributePower() {
             if (energy <= 0f || !canProvideEnergy()) return;
-            int range = mode == MODE_STEP_UP ? 2 : 2;
+            int range = 2;
 
             for (int dx = -range; dx <= range; dx++) {
                 for (int dy = -range; dy <= range; dy++) {
@@ -64,9 +71,10 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
 
         private int connectedNodes() {
             int count = 0;
-            for (int dx = -24; dx <= 24; dx++) {
-                for (int dy = -24; dy <= 24; dy++) {
-                    if (dx == 0 && dy == 0 || dx * dx + dy * dy > 576) continue;
+            int radius = 24;
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dy = -radius; dy <= radius; dy++) {
+                    if (dx == 0 && dy == 0) continue;
                     Building other = Vars.world.build(tile.x + dx, tile.y + dy);
                     if (other instanceof Ic2CableBlock.Ic2CableBuild cable
                         && ((Ic2CableBlock)cable.block).highVoltage

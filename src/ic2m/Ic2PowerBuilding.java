@@ -3,13 +3,18 @@ package ic2m;
 import arc.graphics.Color;
 import arc.graphics.g2d.Draw;
 import arc.graphics.g2d.Fill;
+import arc.graphics.g2d.Lines;
+import arc.util.Align;
 import arc.util.io.Reads;
 import arc.util.io.Writes;
 import mindustry.Vars;
 import mindustry.gen.Building;
+import mindustry.graphics.Drawf;
 import mindustry.graphics.Layer;
 import mindustry.graphics.Pal;
 import mindustry.type.Item;
+import mindustry.type.ItemStack;
+import mindustry.ui.Fonts;
 
 public class Ic2PowerBuilding extends Building {
     public float energy = 0f;
@@ -18,9 +23,48 @@ public class Ic2PowerBuilding extends Building {
     public int pendingOutputAmount;
     public int outputCapacity = 4;
 
+    /** Tier this block was placed at (0 = base). Set from the block's baseTier on creation. */
+    public int upgradeTier = 0;
+    /** Tier baked into the block definition (read from hjson). */
+    public int baseTier = 0;
+
     public float getEnergy() { return energy; }
     public float getMaxEnergy() { return maxEnergy; }
     public float getEnergyPercentage() { return maxEnergy > 0 ? energy / maxEnergy : 0; }
+
+    /** Items the upgrade node must be fed to merge this block to the given user tier (2 or 3). */
+    public ItemStack[] upgradeRequirements(int tier) {
+        return new ItemStack[0];
+    }
+
+    /** Speed/output multiplier applied per upgrade tier (T1=1, T2=1.6, T3=2.4). */
+    public static float tierMultiplier(int tier) {
+        return tier == 0 ? 1f : tier == 1 ? 1.6f : 2.4f;
+    }
+
+    /** Resolves a content item by name suffix (e.g. "copper-ingot"). */
+    protected Item resolveItem(String suffix) {
+        return Vars.content.items().find(i -> i.name.endsWith("-" + suffix));
+    }
+
+    /** Shared base materials consumed by every IC2 upgrade node, scaled per user tier (1x at T2, 10x at T3). */
+    protected ItemStack[] baseRequirements(int tier) {
+        int scale = tier == 2 ? 1 : 10;
+        return new ItemStack[]{
+            new ItemStack(resolveItem("copper-ingot"), 1600 * scale),
+            new ItemStack(resolveItem("lead-ingot"), 800 * scale),
+            new ItemStack(resolveItem("graphite-ingot"), 600 * scale)
+        };
+    }
+
+    /** Base materials for the tier plus a single alloy ingot requirement. */
+    protected ItemStack[] withAlloy(int tier, Item alloy, int amount) {
+        ItemStack[] base = baseRequirements(tier);
+        ItemStack[] out = new ItemStack[base.length + 1];
+        System.arraycopy(base, 0, out, 0, base.length);
+        out[base.length] = new ItemStack(alloy, amount);
+        return out;
+    }
 
     public boolean canAcceptEnergy() { return true; }
     public boolean canProvideEnergy() { return true; }
@@ -46,6 +90,11 @@ public class Ic2PowerBuilding extends Building {
         pendingOutput = item;
         pendingOutputAmount += amount;
         return true;
+    }
+
+    protected boolean canStoreOutput(Item item, int amount) {
+        if (pendingOutput != null && pendingOutput != item) return false;
+        return pendingOutputAmount + amount <= outputCapacity;
     }
 
     protected void flushOutput() {
@@ -128,8 +177,50 @@ public class Ic2PowerBuilding extends Building {
     @Override
     public float progress() { return 0f; }
 
+    @Override
+    public void drawSelect() {
+        super.drawSelect();
+        drawRange();
+        if (!(this instanceof Ic2CableBlock.Ic2CableBuild)) {
+            drawConnections();
+        }
+        if (Fonts.outline != null) {
+            Fonts.outline.draw((int) energy + "/" + (int) maxEnergy + " EU", x, y + block.size * Vars.tilesize / 2f + 16f, Pal.accent, 1f, false, Align.center);
+        }
+    }
+
+    /** Draws the tile area this building can exchange EU across; circle for cables, square for LV blocks. */
+    protected void drawRange() {
+        if (this instanceof Ic2CableBlock.Ic2CableBuild cable) {
+            Ic2CableBlock cableBlock = (Ic2CableBlock) cable.block;
+            Drawf.dashCircle(x, y, cableBlock.nodeRange * Vars.tilesize, cableBlock.highVoltage ? Pal.powerLight : Pal.accent);
+        } else {
+            Drawf.dashSquare(Pal.accent, x, y, 5f * Vars.tilesize);
+        }
+    }
+
+    /** Selection-only overlay showing the live LV power mesh to neighbouring IC2 blocks. */
+    protected void drawConnections() {
+        int range = 2;
+        for (int dx = -range; dx <= range; dx++) {
+            for (int dy = -range; dy <= range; dy++) {
+                if (dx == 0 && dy == 0) continue;
+                Building other = Vars.world.build(tile.x + dx, tile.y + dy);
+                if (other == null || other == this) continue;
+                if (!canConnectEnergy(other)) continue;
+                if (other instanceof Ic2PowerBuilding opb && !opb.canAcceptEnergy()) continue;
+                if (other.pos() < pos()) continue;
+                Lines.stroke(1f);
+                Draw.color(Pal.accent);
+                Lines.line(x, y, other.x, other.y);
+                Draw.reset();
+            }
+        }
+    }
+
     protected void drawEnergyBar() {
-        drawBar(x, y - block.size * Vars.tilesize / 2f + 3f, getEnergyPercentage(), Pal.powerBar);
+        boolean hv = this instanceof Ic2CableBlock.Ic2CableBuild cable && ((Ic2CableBlock) cable.block).highVoltage;
+        drawBar(x, y - block.size * Vars.tilesize / 2f + 3f, getEnergyPercentage(), hv ? Pal.powerLight : Pal.powerBar);
     }
 
     protected void drawProgressBar() {
@@ -147,7 +238,7 @@ public class Ic2PowerBuilding extends Building {
         Draw.color(0f, 0f, 0f, 0.7f);
         Fill.rect(cx, cy, w, h);
         Draw.color(color);
-        Fill.rect(cx - w / 2f * (1f - fraction), cy, w * fraction, h);
+        Fill.rect(cx - w / 2f, cy, w * fraction, h);
         Draw.color();
         Draw.z(z);
     }

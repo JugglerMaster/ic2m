@@ -1,6 +1,5 @@
 {
-    type: Item,
-    name: "Titanium Ingot",
+    name: "titanium-ingot",
     description: "A bar of smelted titanium. Used in the furnace's alloying mode.",
     color: "6ca0dc",
     hardness: 0,

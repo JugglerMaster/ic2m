@@ -1,6 +1,5 @@
 {
-    type: Item,
-    name: "Graphite Dust",
+    name: "graphite-dust",
     description: "Crushed graphite. Can be smelted into graphite.",
     color: "333333",
     hardness: 0,

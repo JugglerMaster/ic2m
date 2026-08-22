@@ -1,6 +1,5 @@
 {
-    type: Item,
-    name: "Coal Dust",
+    name: "coal-dust",
     description: "Crushed coal. Can be smelted or used as fuel.",
     color: "222222",
     hardness: 0,

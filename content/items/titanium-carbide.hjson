@@ -1,6 +1,5 @@
 {
-    type: Item,
-    name: "Titanium Carbide",
+    name: "titanium-carbide",
     description: "A tough titanium and graphite alloy. Produced in the furnace's alloying mode.",
     color: "3cb4be",
     hardness: 0,

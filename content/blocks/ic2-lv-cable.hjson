@@ -1,6 +1,6 @@
 {
     type: "ic2m.Ic2CableBlock",
-    name: "IC2 LV Cable",
+    name: "ic2-lv-cable",
     description: "Low-voltage EU cable. Transfers EU between adjacent IC2 machines and cable segments within 2 tiles.",
     category: "power",
     buildVisibility: "shown",

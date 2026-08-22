@@ -1,0 +1,18 @@
+{
+    type: "ic2m.BatteryBlock",
+    name: "ic2-re-battery-3",
+    description: "Tier 3 IC2 RE Battery (4x4 merged). Stores and exchanges IC2 power with adjacent blocks.",
+    category: "power",
+    buildVisibility: "shown",
+    size: 4,
+    health: 1600,
+    hasItems: false,
+    hasPower: false,
+    update: true,
+    solid: true,
+    baseTier: 2,
+    requirements: [
+        copper/320,
+        lead/160
+    ]
+}

@@ -15,6 +15,7 @@ Adds a **separate power system** (EU) to Mindustry, independent from vanilla pow
 - HV requires Step-Up and Step-Down transformers at the two endpoints
 - Cable loss, transfer rate, capacity, and range vary by cable tier
 - Energy displayed in block UI
+- Select any IC2 block to see its EU coverage/network overlay (square for LV blocks, circle for HV cables), and a placement preview shows the range before you build
 
 ### EU Network
 

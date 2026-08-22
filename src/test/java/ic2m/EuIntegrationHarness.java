@@ -1,7 +1,9 @@
 package ic2m;
 
 import arc.ApplicationListener;
+import arc.Core;
 import arc.backend.headless.HeadlessApplication;
+import arc.graphics.Camera;
 import arc.graphics.Color;
 import mindustry.Vars;
 import mindustry.content.Items;
@@ -156,6 +158,34 @@ public final class EuIntegrationHarness implements ApplicationListener {
             restoredTransformer.read(new arc.util.io.Reads(new DataInputStream(new ByteArrayInputStream(transformerState))), (byte)2);
             check("transformer mode survives save/load", restoredTransformer.mode == Ic2TransformerBlock.MODE_STEP_DOWN);
 
+            // The headless harness has no renderer/GL, so give drawing code a batch to
+            // operate on. This lets the selection/placement draw paths actually run and
+            // surface regressions in our rendering code.
+            if (arc.Core.batch == null) arc.Core.batch = new HeadlessBatch();
+            if (arc.Core.camera == null) arc.Core.camera = new arc.graphics.Camera();
+            if (arc.Core.atlas == null) arc.Core.atlas = new HeadlessAtlas();
+
+            // Exercise the client-only draw paths so regressions in selection/placement
+            // rendering are caught even in this headless harness.
+            source.drawSelect();
+            cable.drawSelect();
+            target.drawSelect();
+            hvSource.drawSelect();
+            stepUp.drawSelect();
+            hvCable.drawSelect();
+            stepDown.drawSelect();
+            hvTarget.drawSelect();
+            solar.drawSelect();
+            feederMacerator.drawSelect();
+            restoredCable.drawSelect();
+            restoredTransformer.drawSelect();
+            batteryBlock.drawPlace(4, 4, 0, true);
+            cableBlock.drawPlace(6, 4, 0, true);
+            hvBlock.drawPlace(8, 2, 0, true);
+            transformerBlock.drawPlace(6, 2, 0, true);
+            solarBlock.drawPlace(28, 4, 0, true);
+            feederMaceratorBlock.drawPlace(28, 6, 0, true);
+
             System.out.println("EU integration harness passed.");
         } catch (Throwable error) {
             failure = error;
@@ -195,5 +225,35 @@ public final class EuIntegrationHarness implements ApplicationListener {
         cable.transferRate = rate;
         cable.loss = loss;
         return cable;
+    }
+
+    /** Minimal no-op Batch so the headless harness can execute drawing code without a GL context. */
+    private static class HeadlessBatch extends arc.graphics.g2d.Batch {
+        @Override
+        protected void draw(arc.graphics.Texture texture, float[] vertices, int offset, int count) {
+        }
+
+        @Override
+        protected void draw(arc.graphics.g2d.TextureRegion region, float x, float y, float w, float h, float u, float v, float u2) {
+        }
+
+        @Override
+        protected void flush() {
+        }
+    }
+
+    /** Minimal TextureAtlas stub so draw code that fetches the white pixel doesn't NPE headlessly. */
+    private static class HeadlessAtlas extends arc.graphics.g2d.TextureAtlas {
+        private final arc.graphics.g2d.TextureAtlas.AtlasRegion dummy = new arc.graphics.g2d.TextureAtlas.AtlasRegion();
+
+        @Override
+        public arc.graphics.g2d.TextureAtlas.AtlasRegion white() {
+            return dummy;
+        }
+
+        @Override
+        public arc.graphics.g2d.TextureAtlas.AtlasRegion find(String name) {
+            return dummy;
+        }
     }
 }

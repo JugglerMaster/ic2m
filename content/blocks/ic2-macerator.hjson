@@ -1,6 +1,6 @@
 {
     type: "ic2m.MaceratorBlock",
-    name: "IC2 Macerator",
+    name: "ic2-macerator",
     description: "Doubles ore output: processes 1 ore into 2 dusts using IC2 power. Feed items in via conveyors; output exits to adjacent blocks.",
     category: "crafting",
     buildVisibility: "shown",

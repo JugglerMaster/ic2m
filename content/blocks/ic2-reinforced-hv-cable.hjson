@@ -1,6 +1,6 @@
 {
     type: "ic2m.Ic2CableBlock",
-    name: "IC2 Reinforced HV Cable",
+    name: "ic2-reinforced-hv-cable",
     description: "High-capacity HV cable with extended 20-tile power-pole range.",
     category: "power",
     buildVisibility: "shown",

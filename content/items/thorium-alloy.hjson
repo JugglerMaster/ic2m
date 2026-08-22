@@ -1,6 +1,5 @@
 {
-    type: Item,
-    name: "Thorium Alloy",
+    name: "thorium-alloy",
     description: "A radioactive lead and thorium alloy. Produced in the furnace's alloying mode.",
     color: "6ebe6e",
     hardness: 0,

@@ -1,0 +1,20 @@
+{
+    type: "ic2m.SolarPanel",
+    name: "ic2-solar-panel-2",
+    description: "Tier 2 IC2 Solar Panel (2x2 merged). Generates IC2 power from sunlight and distributes to IC2 blocks within 2 tiles.",
+    category: "power",
+    buildVisibility: "shown",
+    size: 2,
+    health: 400,
+    hasItems: true,
+    hasPower: false,
+    update: true,
+    solid: true,
+    baseTier: 1,
+    itemCapacity: 200,
+    requirements: [
+        copper/120,
+        lead/60,
+        graphite/40
+    ]
+}

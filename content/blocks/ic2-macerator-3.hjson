@@ -1,0 +1,20 @@
+{
+    type: "ic2m.MaceratorBlock",
+    name: "ic2-macerator-3",
+    description: "Tier 3 IC2 Macerator (4x4 merged). Doubles ore output: processes 1 ore into 2 dusts using IC2 power.",
+    category: "crafting",
+    buildVisibility: "shown",
+    size: 4,
+    health: 2400,
+    hasItems: true,
+    hasPower: false,
+    update: true,
+    solid: true,
+    baseTier: 2,
+    itemCapacity: 10,
+    requirements: [
+        copper/640,
+        lead/320,
+        graphite/240
+    ]
+}

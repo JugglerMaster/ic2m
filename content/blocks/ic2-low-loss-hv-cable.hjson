@@ -1,6 +1,6 @@
 {
     type: "ic2m.Ic2CableBlock",
-    name: "IC2 Low-Loss HV Cable",
+    name: "ic2-low-loss-hv-cable",
     description: "HV cable optimized for reduced EU loss over long distances.",
     category: "power",
     buildVisibility: "shown",

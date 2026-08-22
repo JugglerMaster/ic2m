@@ -70,7 +70,7 @@ task deploy(type: Copy, dependsOn: jar){
     }
     from jar.destinationDirectory
     into dir
-    mkdir dir
+    dir.mkdirs()
 }
 
 task euTest(type: JavaExec, dependsOn: testClasses){

@@ -1,9 +1,11 @@
 package ic2m;
 
 import arc.func.Func;
-import mindustry.gen.Building;
-import mindustry.graphics.Pal;
 import mindustry.ui.Bar;
+import mindustry.Vars;
+import mindustry.gen.Building;
+import mindustry.graphics.Drawf;
+import mindustry.graphics.Pal;
 import mindustry.world.Block;
 import mindustry.world.meta.BlockGroup;
 import mindustry.world.meta.Stat;
@@ -32,6 +34,23 @@ public class Ic2PowerBlock extends Block {
     @Override
     public void setStats(){
         super.setStats();
-        stats.add(Stat.powerCapacity, "[orange]@[] EU", (int)basePowerCapacity);
+        stats.add(Stat.powerCapacity, "[orange]@[] EU", (int)statsCapacity());
+        stats.add(Stat.powerRange, statsRange());
+    }
+
+    protected float statsCapacity(){
+        return basePowerCapacity;
+    }
+
+    protected int statsRange(){
+        return 2;
+    }
+
+    @Override
+    public void drawPlace(int x, int y, int rotation, boolean valid) {
+        super.drawPlace(x, y, rotation, valid);
+        float cx = x * Vars.tilesize + Vars.tilesize / 2f;
+        float cy = y * Vars.tilesize + Vars.tilesize / 2f;
+        Drawf.dashSquare(Pal.accent, cx, cy, 5f * Vars.tilesize);
     }
 }

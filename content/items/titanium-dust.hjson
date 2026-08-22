@@ -1,6 +1,5 @@
 {
-    type: Item,
-    name: "Titanium Dust",
+    name: "titanium-dust",
     description: "Crushed titanium ore. Can be smelted into titanium.",
     color: "6ca0dc",
     hardness: 0,

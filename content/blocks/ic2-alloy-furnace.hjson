@@ -1,6 +1,6 @@
 {
     type: "ic2m.AlloyFurnaceBlock",
-    name: "IC2 Alloy Furnace",
+    name: "ic2-alloy-furnace",
     description: "Requires IC2 power. Smelting mode: 1 dust smelts into its ingot. Alloying mode: combines 2 ingots into alloys. Tap to switch mode. Feed items in via conveyors; output exits to adjacent blocks.",
     category: "crafting",
     buildVisibility: "shown",

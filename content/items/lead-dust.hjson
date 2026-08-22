@@ -1,6 +1,5 @@
 {
-    type: Item,
-    name: "Lead Dust",
+    name: "lead-dust",
     description: "Crushed lead ore. Can be smelted into lead ingots.",
     color: "555566",
     hardness: 0,

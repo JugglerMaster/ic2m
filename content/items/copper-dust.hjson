@@ -1,6 +1,5 @@
 {
-    type: Item,
-    name: "Copper Dust",
+    name: "copper-dust",
     description: "Crushed copper ore. Can be smelted into copper ingots.",
     color: "d48541",
     hardness: 0,

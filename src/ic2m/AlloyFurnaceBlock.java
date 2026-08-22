@@ -12,6 +12,7 @@ import mindustry.gen.Building;
 import mindustry.gen.Unit;
 import mindustry.graphics.Pal;
 import mindustry.type.Item;
+import mindustry.type.ItemStack;
 import mindustry.ui.Bar;
 import mindustry.ui.Styles;
 import mindustry.world.meta.Stat;
@@ -118,17 +119,24 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
     public void setStats(){
         super.setStats();
         stats.add(Stat.powerUse, "[orange]@[] EU/t", String.format("%.1f", powerPerTick));
+        stats.add(Stat.input, "Dust -> matching ingot; Copper + Lead -> Surge Alloy; Titanium + Graphite -> Titanium Carbide; Thorium + Lead -> Thorium Alloy");
     }
 
     public class AlloyFurnaceBuild extends Ic2PowerBuilding {
         public float progress = 0f;
         public Item currentInput = null;
         public Item output = null;
+        public int outputAmount = 0;
         public int mode = MODE_SMELT;
         public int upgradeTier = 0;
 
-        private static final int TIER2_COST = 10;
-        private static final int TIER3_COST = 10;
+        @Override
+        public void created() {
+            super.created();
+            upgradeTier = baseTier;
+            itemCapacity = block.size * block.size * 10;
+            outputCapacity = block.size * block.size * 4;
+        }
 
         @Override
         public void update() {
@@ -136,39 +144,44 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
             flushOutput();
             if (!enabled) return;
 
+            int parallel = block.size * block.size;
             if (output != null && currentInput != null) {
                 float power = powerForTier(upgradeTier);
                 if (energy >= power) {
                     energy -= power;
                     progress += 1f;
                     if (progress >= craftTimeForTier(upgradeTier)) {
-                        if (storeOutput(output, 1)) {
+                        if (storeOutput(output, outputAmount)) {
                             progress = 0f;
                             currentInput = null;
                             output = null;
+                            outputAmount = 0;
                         }
                     }
                 }
             } else if (mode == MODE_SMELT) {
-                startSmelt();
+                startSmelt(parallel);
             } else {
-                startAlloy();
+                startAlloy(parallel);
             }
         }
 
-        private void startSmelt() {
+        private void startSmelt(int parallel) {
             for (Item item : Vars.content.items()) {
-                if (items.get(item) > 0 && isDust(item)) {
-                    items.remove(item, 1);
+                int count = items.get(item);
+                if (count > 0 && isDust(item)) {
+                    int taken = Math.min(count, parallel);
+                    items.remove(item, taken);
                     currentInput = item;
                     output = ingotForDust(item);
+                    outputAmount = taken;
                     progress = 0f;
                     break;
                 }
             }
         }
 
-        private void startAlloy() {
+        private void startAlloy(int parallel) {
             for (Item itemA : Vars.content.items()) {
                 int countA = items.get(itemA);
                 if (countA <= 0) continue;
@@ -178,10 +191,12 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
                     if (countB <= 0) continue;
                     Item result = recipe(itemA, itemB);
                     if (result != null) {
-                        items.remove(itemA, 1);
-                        items.remove(itemB, 1);
+                        int taken = Math.min(parallel, Math.min(countA, countB));
+                        items.remove(itemA, taken);
+                        items.remove(itemB, taken);
                         currentInput = itemA;
                         output = result;
+                        outputAmount = taken;
                         progress = 0f;
                         return;
                     }
@@ -206,9 +221,6 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
             if (output != null && currentInput != null) return false;
             if (items.total() >= itemCapacity) return false;
             ensureItems();
-            if (item == titaniumCarbide && upgradeTier == 0) return true;
-            if (item == thoriumAlloy && upgradeTier == 1) return true;
-
             if (mode == MODE_SMELT) {
                 return isDust(item);
             } else {
@@ -219,6 +231,13 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
                 }
                 return false;
             }
+        }
+
+        @Override
+        public ItemStack[] upgradeRequirements(int tier) {
+            if (tier == 2) return withAlloy(tier, resolveItem("titanium-carbide"), 100);
+            if (tier == 3) return withAlloy(tier, resolveItem("thorium-alloy"), 400);
+            return new ItemStack[0];
         }
 
         @Override
@@ -256,15 +275,7 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
             table.add("Speed: " + String.format("%.0f%%", craftTime / craftTimeForTier(upgradeTier) * 100f)
                 + " | Power: " + String.format("%.1f", powerForTier(upgradeTier)) + " EU/t").left().row();
             table.add(outputStatus()).left().row();
-            if (upgradeTier < 2) {
-                Item ingredient = upgradeTier == 0 ? titaniumCarbide : thoriumAlloy;
-                int cost = upgradeTier == 0 ? TIER2_COST : TIER3_COST;
-                table.button("Upgrade to Tier " + (upgradeTier + 2), Styles.defaultt, this::upgrade).size(260f, 40f).row();
-                table.add("Requires: " + cost + " " + ingredient.localizedName).left();
-                table.add(new Image(ingredient.uiIcon)).size(16f).padLeft(4).row();
-            } else {
-                table.add("Maximum tier").left();
-            }
+            table.add("Tier 2-3 upgrades are performed by the IC2 Upgrade Node (2x2 with this block).").left().row();
         }
 
         private void addRecipe(Table table, Item input, Item output) {
@@ -275,19 +286,6 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
         private void addAlloyRecipe(Table table, Item a, Item b, Item output) {
             if (a == null || b == null || output == null) return;
             table.add(a.localizedName + " + " + b.localizedName + " -> " + output.localizedName).left().row();
-        }
-
-        boolean canUpgrade() {
-            ensureItems();
-            Item ingredient = upgradeTier == 0 ? titaniumCarbide : thoriumAlloy;
-            return upgradeTier < 2 && ingredient != null && items.get(ingredient) >= (upgradeTier == 0 ? TIER2_COST : TIER3_COST);
-        }
-
-        void upgrade() {
-            if (!canUpgrade()) return;
-            Item ingredient = upgradeTier == 0 ? titaniumCarbide : thoriumAlloy;
-            items.remove(ingredient, upgradeTier == 0 ? TIER2_COST : TIER3_COST);
-            upgradeTier++;
         }
 
         @Override

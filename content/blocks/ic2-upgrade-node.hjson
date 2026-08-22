@@ -1,0 +1,19 @@
+{
+    type: "ic2m.Ic2UpgradeNodeBlock",
+    name: "ic2-upgrade-node",
+    description: "Upgrade node. Place at a corner of a 2x2 of same-tier IC2 machines, feed the required items, and supply EU to merge them into one larger upgraded block. Consumed on use.",
+    category: "power",
+    buildVisibility: "shown",
+    size: 1,
+    health: 120,
+    hasItems: true,
+    hasPower: false,
+    update: true,
+    solid: true,
+    itemCapacity: 2000,
+    requirements: [
+        copper/50,
+        lead/30,
+        titanium/20
+    ]
+}
