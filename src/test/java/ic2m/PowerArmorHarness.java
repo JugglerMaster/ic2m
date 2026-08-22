@@ -14,6 +14,7 @@ import mindustry.entities.abilities.ForceFieldAbility;
 import mindustry.entities.abilities.RepairFieldAbility;
 import mindustry.entities.abilities.ShieldArcAbility;
 import mindustry.game.Rules;
+import mindustry.gen.Building;
 import mindustry.type.Category;
 import mindustry.type.ItemStack;
 import mindustry.world.Block;
@@ -106,6 +107,19 @@ public final class PowerArmorHarness implements ApplicationListener {
             check("bench has build requirements", bench.requirements.length > 0);
             check("bench unlock costs copper", hasItem(((PowerArmorBench) bench).unlockCost, Items.copper, 200));
             check("bench unlock costs graphite", hasItem(((PowerArmorBench) bench).unlockCost, Items.graphite, 100));
+
+            // --- Bench wiring + on/off switch ---
+            check("bench wires custom Build", Ic2mMod.powerArmorBench.buildType != null);
+            PowerArmorBench.PowerArmorBenchBuild pb =
+                (PowerArmorBench.PowerArmorBenchBuild) Ic2mMod.powerArmorBench.newBuilding();
+            check("bench Build is suit build", pb instanceof PowerArmorBench.PowerArmorBenchBuild);
+            check("bench Build defaults unlocked off", !pb.unlocked);
+            check("bench Build defaults enabled on", pb.enabled);
+            pb.unlocked = true;
+            pb.enabled = false;
+            check("disabled suit is inactive", !(pb.unlocked && pb.enabled));
+            pb.enabled = true;
+            check("enabled suit is active", pb.unlocked && pb.enabled);
 
             // --- Nanite Recombinator config ---
             check("recombinator registered", recombinator != null);

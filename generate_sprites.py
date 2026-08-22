@@ -303,26 +303,56 @@ def make_transformer():
 # === POWER ARMOR SUIT (mech) SPRITES ===
 
 def make_power_armor_body():
-    """Mech body / torso of the power armor suit."""
+    """Mech body / torso of the power armor suit. IC2-style: mostly white plating
+    with a few small brown/black accent pixels (visor, joints, belt)."""
     img = Image.new('RGBA', (40, 40), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    draw.rectangle([14, 10, 26, 30], fill=(90, 120, 150), outline=(170, 210, 240, 255))
-    draw.rectangle([16, 4, 24, 12], fill=(110, 150, 180), outline=(190, 225, 250, 255))
-    draw.rectangle([10, 12, 16, 20], fill=(80, 110, 140))
-    draw.rectangle([24, 12, 30, 20], fill=(80, 110, 140))
-    draw.rectangle([8, 14, 12, 28], fill=(85, 115, 145))
-    draw.rectangle([28, 14, 32, 28], fill=(85, 115, 145))
-    draw.ellipse([17, 16, 23, 22], fill=(120, 230, 255, 255))
+    white = (238, 240, 244, 255)
+    outline = (200, 205, 212, 255)
+    dark = (28, 28, 34, 255)     # black accent pixels
+    brown = (110, 74, 42, 255)   # brown accent pixels
+    # torso
+    draw.rectangle([13, 11, 27, 30], fill=white, outline=outline)
+    # cockpit / head
+    draw.rectangle([16, 4, 24, 12], fill=white, outline=outline)
+    # visor (small black pixels)
+    draw.rectangle([17, 6, 23, 9], fill=dark)
+    # shoulders
+    draw.rectangle([9, 12, 15, 21], fill=white, outline=outline)
+    draw.rectangle([25, 12, 31, 21], fill=white, outline=outline)
+    # arms
+    draw.rectangle([7, 14, 12, 29], fill=white, outline=outline)
+    draw.rectangle([28, 14, 33, 29], fill=white, outline=outline)
+    # small brown belt pixels
+    draw.rectangle([14, 20, 26, 21], fill=brown)
+    draw.rectangle([10, 16, 11, 17], fill=brown)   # shoulder rivets
+    draw.rectangle([29, 16, 30, 17], fill=brown)
+    # small black joint pixels
+    draw.rectangle([13, 24, 14, 25], fill=dark)
+    draw.rectangle([26, 24, 27, 25], fill=dark)
     return img
 
+
 def make_power_armor_leg():
-    """Mech legs of the power armor suit."""
+    """Mech legs of the power armor suit. IC2-style: white with dark joints."""
     img = Image.new('RGBA', (40, 40), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    draw.rectangle([14, 18, 19, 36], fill=(70, 95, 120), outline=(150, 190, 220, 255))
-    draw.rectangle([21, 18, 26, 36], fill=(70, 95, 120), outline=(150, 190, 220, 255))
-    draw.rectangle([12, 34, 20, 38], fill=(60, 85, 110))
-    draw.rectangle([20, 34, 28, 38], fill=(60, 85, 110))
+    white = (238, 240, 244, 255)
+    outline = (200, 205, 212, 255)
+    dark = (28, 28, 34, 255)
+    brown = (110, 74, 42, 255)
+    # two legs
+    draw.rectangle([13, 18, 19, 36], fill=white, outline=outline)
+    draw.rectangle([21, 18, 27, 36], fill=white, outline=outline)
+    # feet
+    draw.rectangle([11, 34, 21, 38], fill=white, outline=outline)
+    draw.rectangle([19, 34, 29, 38], fill=white, outline=outline)
+    # knee joints (small dark pixels)
+    draw.rectangle([14, 25, 18, 27], fill=dark)
+    draw.rectangle([22, 25, 26, 27], fill=dark)
+    # small brown hip accents
+    draw.rectangle([13, 19, 19, 20], fill=brown)
+    draw.rectangle([21, 19, 27, 20], fill=brown)
     return img
 
 def make_power_armor_base():

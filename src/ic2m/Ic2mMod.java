@@ -151,7 +151,7 @@ public class Ic2mMod extends Mod {
     private static PowerArmorBench.PowerArmorBenchBuild findActiveBench() {
         if (Groups.build == null) return null;
         for (Building b : Groups.build) {
-            if (b instanceof PowerArmorBench.PowerArmorBenchBuild pb && pb.unlocked) return pb;
+            if (b instanceof PowerArmorBench.PowerArmorBenchBuild pb && pb.unlocked && pb.enabled) return pb;
         }
         return null;
     }
@@ -159,7 +159,7 @@ public class Ic2mMod extends Mod {
     private static PowerArmorBench.PowerArmorBenchBuild findActiveBench(mindustry.game.Team team) {
         if (Groups.build == null) return null;
         for (Building b : Groups.build) {
-            if (b instanceof PowerArmorBench.PowerArmorBenchBuild pb && pb.unlocked && b.team == team) return pb;
+            if (b instanceof PowerArmorBench.PowerArmorBenchBuild pb && pb.unlocked && pb.enabled && b.team == team) return pb;
         }
         return null;
     }

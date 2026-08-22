@@ -30,10 +30,12 @@ public class PowerArmorBench extends Block {
         saveConfig = true;
         category = Category.units;
         requirements = ItemStack.with(Items.copper, 100, Items.lead, 50);
+        buildType = () -> new PowerArmorBenchBuild();
     }
 
     public class PowerArmorBenchBuild extends Building {
         public boolean unlocked = false;
+        public boolean enabled = true;
         public String weaponId = "rifle";
         public String armorId = "balanced";
         public String supportId = "none";
@@ -56,6 +58,13 @@ public class PowerArmorBench extends Block {
             }
 
             table.add("[green]Unlocked[] — you respawn as the Power Armor Suit.").row();
+
+            table.button(enabled ? "Suit: [green]ON[]" : "Suit: [red]OFF[]", () -> {
+                enabled = !enabled;
+                syncLoadout();
+                applyLoadout();
+                refresh(table);
+            }).growX().row();
 
             category(table, "Weapon", SuitOptions.WEAPONS, weaponId,
                 id -> { weaponId = id; afterSelect(table); });
@@ -103,9 +112,10 @@ public class PowerArmorBench extends Block {
             return true;
         }
 
-        /** Push this block's loadout into the mod-level active state. */
+        /** Push this block's loadout into the mod-level active state. The suit is
+         *  only active when it is both unlocked AND switched on. */
         void syncLoadout() {
-            Ic2mMod.suitUnlocked = true;
+            Ic2mMod.suitUnlocked = unlocked && enabled;
             Ic2mMod.wId = weaponId;
             Ic2mMod.aId = armorId;
             Ic2mMod.sId = supportId;
@@ -138,6 +148,7 @@ public class PowerArmorBench extends Block {
         public void write(Writes write) {
             super.write(write);
             write.bool(unlocked);
+            write.bool(enabled);
             write.str(weaponId);
             write.str(armorId);
             write.str(supportId);
@@ -147,6 +158,7 @@ public class PowerArmorBench extends Block {
         public void read(Reads read, byte revision) {
             super.read(read, revision);
             unlocked = read.bool();
+            enabled = read.bool();
             weaponId = read.str();
             armorId = read.str();
             supportId = read.str();
