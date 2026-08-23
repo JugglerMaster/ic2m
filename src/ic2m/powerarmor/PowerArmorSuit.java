@@ -5,6 +5,7 @@ import mindustry.entities.bullet.BulletType;
 import mindustry.gen.Sounds;
 import mindustry.type.Weapon;
 import mindustry.type.UnitType;
+import ic2m.Ic2mMod;
 import ic2m.powerarmor.PowerArmorMech;
 
 /** Player-controllable power armor mech. The player "becomes" this unit on respawn
@@ -56,7 +57,7 @@ public class PowerArmorSuit extends UnitType {
     /** Recompute the suit from the chosen loadout (single-select per category).
      *  @param repairEnabled when false, the "repair" support option is suppressed
      *                       for this life (Nanite Gel not available at respawn). */
-    public void rebuild(String weaponId, String armorId, String supportId, boolean repairEnabled) {
+    public void rebuild(String weaponId, String armorId, String supportId, String mobilityId, boolean repairEnabled) {
         weapons.clear();
         abilities.clear();
         health = 600f;
@@ -64,11 +65,25 @@ public class PowerArmorSuit extends UnitType {
         speed = 0.9f;
         buildSpeed = 1f;
 
+        applyMobility(mobilityId);
         applyArmor(armorId);
         weapons.add(SuitOptions.makeWeapon(weaponId, name));
         applySupport(supportId, repairEnabled);
         if (armorId.equals("shielded")) {
             abilities.add(SuitOptions.shieldedArc());
+        }
+    }
+
+    /** Switch between the walking mech and the flying jetpack entity. Flight is only
+     *  granted when the jetpack tech node has been researched; otherwise we fall back
+     *  to the ground mech even if "jetpack" was somehow selected. */
+    private void applyMobility(String id) {
+        if (id.equals("jetpack") && Ic2mMod.jetpackUnlocked()) {
+            flying = true;
+            constructor = PowerArmorFly::new;
+        } else {
+            flying = false;
+            constructor = PowerArmorMech::new;
         }
     }
 

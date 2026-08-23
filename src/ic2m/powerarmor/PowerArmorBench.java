@@ -5,6 +5,7 @@ import arc.scene.ui.layout.Table;
 import arc.util.io.Reads;
 import arc.util.io.Writes;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import mindustry.Vars;
 import mindustry.content.Items;
 import mindustry.gen.Building;
@@ -39,6 +40,7 @@ public class PowerArmorBench extends Block {
         public String weaponId = "rifle";
         public String armorId = "balanced";
         public String supportId = "none";
+        public String mobilityId = "ground";
 
         @Override
         public void buildConfiguration(Table table) {
@@ -66,23 +68,29 @@ public class PowerArmorBench extends Block {
                 refresh(table);
             }).growX().row();
 
-            category(table, "Weapon", SuitOptions.WEAPONS, weaponId,
+            category(table, "Weapon", SuitOptions.WEAPONS, weaponId, null,
                 id -> { weaponId = id; afterSelect(table); });
-            category(table, "Armor", SuitOptions.ARMORS, armorId,
+            category(table, "Armor", SuitOptions.ARMORS, armorId, null,
                 id -> { armorId = id; afterSelect(table); });
-            category(table, "Support", SuitOptions.SUPPORTS, supportId,
+            category(table, "Support", SuitOptions.SUPPORTS, supportId, null,
                 id -> { supportId = id; afterSelect(table); });
+            category(table, "Mobility", SuitOptions.MOBILITY, mobilityId,
+                id -> id.equals("jetpack") && !Ic2mMod.jetpackUnlocked(),
+                id -> { mobilityId = id; afterSelect(table); });
 
             if (supportId.equals("repair")) {
                 table.add("[scarlet]Repair consumes Nanite Gel each respawn.[]").row();
             }
         }
 
-        private void category(Table table, String label, String[] options, String selected, Consumer<String> onPick) {
+        private void category(Table table, String label, String[] options, String selected, Predicate<String> locked, Consumer<String> onPick) {
             table.add("[lightgray]" + label + "[]").row();
             for (String opt : options) {
                 boolean sel = opt.equals(selected);
-                table.button(opt, () -> onPick.accept(opt))
+                boolean isLocked = locked != null && locked.test(opt);
+                table.button(isLocked ? ("[gray]" + opt + " (locked)[]") : opt, () -> {
+                    if (!isLocked) onPick.accept(opt);
+                })
                     .growX()
                     .color(sel ? Pal.accent : new Color(0.3f, 0.3f, 0.3f, 1f))
                     .row();
@@ -119,6 +127,7 @@ public class PowerArmorBench extends Block {
             Ic2mMod.wId = weaponId;
             Ic2mMod.aId = armorId;
             Ic2mMod.sId = supportId;
+            Ic2mMod.mId = mobilityId;
         }
 
         /** Apply the active loadout to the shared suit + core respawn unit. */
@@ -152,6 +161,7 @@ public class PowerArmorBench extends Block {
             write.str(weaponId);
             write.str(armorId);
             write.str(supportId);
+            write.str(mobilityId);
         }
 
         @Override
@@ -162,6 +172,7 @@ public class PowerArmorBench extends Block {
             weaponId = read.str();
             armorId = read.str();
             supportId = read.str();
+            mobilityId = read.str();
             if (unlocked) {
                 syncLoadout();
                 applyLoadout();

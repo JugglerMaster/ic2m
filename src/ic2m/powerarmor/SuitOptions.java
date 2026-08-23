@@ -16,6 +16,7 @@ public class SuitOptions {
     public static final String[] WEAPONS = {"rifle", "cannon", "missiles", "shock"};
     public static final String[] ARMORS = {"balanced", "heavy", "shielded"};
     public static final String[] SUPPORTS = {"none", "booster", "shield", "repair"};
+    public static final String[] MOBILITY = {"ground", "jetpack"};
 
     private SuitOptions() {}
 

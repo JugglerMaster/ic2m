@@ -63,42 +63,53 @@ public final class PowerArmorHarness implements ApplicationListener {
             check("suit in content registry", Vars.content.units().contains(suit));
             check("suit is player-controllable", suit.playerControllable);
             check("suit has a default weapon", suit.weapons.size > 0);
-            suit.rebuild("rifle", "balanced", "none", true);
+            suit.rebuild("rifle", "balanced", "none", "ground", true);
             check("suit rebuild keeps weapon", suit.weapons.size > 0);
             check("suit rebuild resets health", suit.health == 600f);
 
             // --- Weapon branching ---
-            suit.rebuild("cannon", "balanced", "none", true);
+            suit.rebuild("cannon", "balanced", "none", "ground", true);
             check("cannon weapon present", suit.weapons.size == 1);
             check("cannon reload is slow", suit.weapons.first().reload == 40f);
-            suit.rebuild("missiles", "balanced", "none", true);
+            suit.rebuild("missiles", "balanced", "none", "ground", true);
             check("missiles have splash", suit.weapons.first().bullet.splashDamage > 0f);
             check("missiles home", suit.weapons.first().bullet.homingPower > 0f);
-            suit.rebuild("shock", "balanced", "none", true);
+            suit.rebuild("shock", "balanced", "none", "ground", true);
             check("shock applies status", suit.weapons.first().bullet.status != null);
 
             // --- Armor branching ---
-            suit.rebuild("rifle", "heavy", "none", true);
+            suit.rebuild("rifle", "heavy", "none", "ground", true);
             check("heavy armor raises health", suit.health == 850f);
             check("heavy armor raises armor", suit.armor == 9f);
-            suit.rebuild("rifle", "shielded", "none", true);
+            suit.rebuild("rifle", "shielded", "none", "ground", true);
             check("shielded adds arc shield", hasAbility(suit, ShieldArcAbility.class));
             check("shielded keeps base health", suit.health == 600f);
 
             // --- Support branching ---
-            suit.rebuild("rifle", "balanced", "shield", true);
+            suit.rebuild("rifle", "balanced", "shield", "ground", true);
             check("shield support adds force field", hasAbility(suit, ForceFieldAbility.class));
-            suit.rebuild("rifle", "balanced", "booster", true);
+            suit.rebuild("rifle", "balanced", "booster", "ground", true);
             check("booster increases speed", suit.speed > 1.0f);
-            suit.rebuild("rifle", "balanced", "repair", true);
+            suit.rebuild("rifle", "balanced", "repair", "ground", true);
             check("repair (enabled) adds repair field", hasAbility(suit, RepairFieldAbility.class));
-            suit.rebuild("rifle", "balanced", "repair", false);
+            suit.rebuild("rifle", "balanced", "repair", "ground", false);
             check("repair (disabled) adds no repair field", !hasAbility(suit, RepairFieldAbility.class));
+
+            // --- Mobility branching / jetpack gating ---
+            suit.rebuild("rifle", "balanced", "none", "jetpack", true);
+            check("jetpack locked (no research) -> not flying", !suit.flying);
+            Ic2mMod.jetpackItem = Items.copper; // stand-in for a researched jetpack item
+            suit.rebuild("rifle", "balanced", "none", "jetpack", true);
+            check("jetpack researched -> flying", suit.flying);
+            suit.rebuild("rifle", "balanced", "none", "ground", true);
+            check("ground -> not flying", !suit.flying);
+            Ic2mMod.jetpackItem = null; // restore harness default
 
             // --- Option catalog ---
             check("4 weapon options", SuitOptions.WEAPONS.length == 4);
             check("3 armor options", SuitOptions.ARMORS.length == 3);
             check("4 support options", SuitOptions.SUPPORTS.length == 4);
+            check("2 mobility options", SuitOptions.MOBILITY.length == 2);
 
             // --- Bench config ---
             check("bench registered", bench != null);

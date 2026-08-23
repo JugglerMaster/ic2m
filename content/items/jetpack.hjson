@@ -1,0 +1,10 @@
+{
+    name: "ic2m-jetpack",
+    description: "Jetpack flight module for the Power Armor Suit. Researched via the tech tree; enables the 'jetpack' mobility option once unlocked.",
+    color: "4ba3ff",
+    hardness: 0,
+    cost: 1,
+    flammability: 0.1,
+    explosiveness: 0,
+    alwaysUnlocked: false
+}

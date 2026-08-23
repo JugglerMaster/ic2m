@@ -36,11 +36,16 @@ public class Ic2mMod extends Mod {
     public static Item naniteGel;
     public static final int REPAIR_GEL_COST = 1;
 
+    /** Jetpack tech item (resolved after the HJSON content is loaded). Gating the
+     *  "jetpack" mobility option behind its research node. */
+    public static Item jetpackItem;
+
     /** Active loadout (mirrors the unlocked bench's saved config). */
     public static boolean suitUnlocked = false;
     public static String wId = "rifle";
     public static String aId = "balanced";
     public static String sId = "none";
+    public static String mId = "ground";
 
     public Ic2mMod() {
     }
@@ -57,6 +62,10 @@ public class Ic2mMod extends Mod {
 
         naniteRecombinator = new NaniteRecombinator("ic2m-nanite-recombinator");
         Vars.content.handleContent(naniteRecombinator);
+
+        // Resolve the jetpack tech item (loaded from HJSON content) so the
+        // "jetpack" mobility option can be gated behind its research node.
+        jetpackItem = Vars.content.getByName(ContentType.item, "ic2m-jetpack");
 
         // Re-apply the respawn unit (core unitType) whenever a world (re)loads,
         // using the last unlocked bench config.
@@ -75,10 +84,17 @@ public class Ic2mMod extends Mod {
     public void init() {
         if (powerArmorBench == null) return;
 
-        // Own tech-tree branch. Researching the suit unlocks bench + recombinator.
+        // Own tech-tree branch. Researching the suit unlocks bench + recombinator,
+        // and the recombinator gates the jetpack flight module.
         TechTree.nodeRoot("ic2m-power-armor", powerArmorSuit, true, () -> {
             TechTree.node(powerArmorBench);
-            if (naniteRecombinator != null) TechTree.node(naniteRecombinator);
+            if (naniteRecombinator != null) {
+                TechTree.node(naniteRecombinator, ItemStack.with(Items.copper, 100), () -> {
+                    if (jetpackItem != null) {
+                        TechTree.node(jetpackItem, ItemStack.with(Items.surgeAlloy, 50, Items.titanium, 50), () -> {});
+                    }
+                });
+            }
         });
 
         // Wire up the recombinator's output now that the Nanite Gel item exists.
@@ -110,7 +126,7 @@ public class Ic2mMod extends Mod {
         }
         suitUnlocked = true;
         setCoreUnitType(powerArmorSuit);
-        powerArmorSuit.rebuild(bench.weaponId, bench.armorId, bench.supportId, true);
+        powerArmorSuit.rebuild(bench.weaponId, bench.armorId, bench.supportId, bench.mobilityId, true);
     }
 
     /** Apply the loadout at a player's respawn. The freshly spawned suit unit is
@@ -194,6 +210,12 @@ public class Ic2mMod extends Mod {
         if (naniteGel == null) {
             naniteGel = Vars.content.getByName(ContentType.item, "nanite-gel");
         }
+    }
+
+    /** True once the jetpack tech node has been researched for the current team.
+     *  Public so {@code PowerArmorSuit.applyMobility} can gate flight. */
+    public static boolean jetpackUnlocked() {
+        return jetpackItem != null && jetpackItem.unlockedNow();
     }
 
     private void addAlternateRecipes() {
