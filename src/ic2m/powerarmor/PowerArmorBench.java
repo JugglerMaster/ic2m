@@ -123,7 +123,7 @@ public class PowerArmorBench extends Block {
 
         /** Apply the active loadout to the shared suit + core respawn unit. */
         void applyLoadout() {
-            Ic2mMod.applySuitLoadout();
+            Ic2mMod.applySuitLoadout(this.team);
         }
 
         private String costString() {

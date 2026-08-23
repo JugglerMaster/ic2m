@@ -7,7 +7,9 @@ import mindustry.content.Items;
 import mindustry.content.TechTree;
 import mindustry.content.UnitTypes;
 import mindustry.entities.abilities.Ability;
+import mindustry.entities.abilities.RepairFieldAbility;
 import mindustry.game.EventType;
+import mindustry.game.Team;
 import mindustry.gen.Building;
 import mindustry.gen.Groups;
 import mindustry.gen.Unit;
@@ -86,12 +88,21 @@ public class Ic2mMod extends Mod {
         }
     }
 
-    /** Apply the active loadout: find the unlocked bench (if any), make every core
-     *  spawn the player as the suit, and rebuild the shared suit. Repair is assumed
-     *  available here (the respawn handler re-applies with gel gating). */
+    /** Apply the active loadout for the player's team: find that team's unlocked
+     *  bench (if any), make every core spawn the player as the suit, and rebuild
+     *  the shared suit. Repair is assumed available here (the respawn handler
+     *  re-applies with per-respawn gel gating). Defaults to the local player's
+     *  team; pass {@code null} to search every team (used headlessly). */
     public static void applySuitLoadout() {
+        applySuitLoadout(Vars.player != null ? Vars.player.team() : null);
+    }
+
+    /** @param team the team whose bench should drive the respawn unit, or
+     *              {@code null} to accept any active bench. */
+    public static void applySuitLoadout(Team team) {
         if (powerArmorSuit == null) return;
-        PowerArmorBench.PowerArmorBenchBuild bench = findActiveBench();
+        PowerArmorBench.PowerArmorBenchBuild bench =
+            team != null ? findActiveBench(team) : findActiveBench();
         if (bench == null) {
             suitUnlocked = false;
             setCoreUnitType(UnitTypes.alpha);
@@ -102,23 +113,29 @@ public class Ic2mMod extends Mod {
         powerArmorSuit.rebuild(bench.weaponId, bench.armorId, bench.supportId, true);
     }
 
-    /** Apply the loadout at a player's respawn, consuming Nanite Gel when the
-     *  "repair" support option is selected. Patches the freshly spawned unit so
-     *  this life reflects the effective (gel-gated) loadout immediately. */
+    /** Apply the loadout at a player's respawn. The freshly spawned suit unit is
+     *  already initialized from the shared suit (weapons/abilities/health), so we
+     *  only enforce the per-respawn Nanite Gel gate for the "repair" support here.
+     *  Teams without an active bench that were nonetheless forced into the suit by
+     *  the global core unitType have their suit perks stripped. */
     private static void applySuitLoadoutRespawn(Unit u) {
         if (powerArmorSuit == null || u == null) return;
         PowerArmorBench.PowerArmorBenchBuild bench = findActiveBench(u.team);
-        if (bench == null) return;
 
-        String sid = bench.supportId;
-        boolean repairEnabled = true;
-        if (sid.equals("repair")) {
-            ItemModule inv = bench.team.core() != null ? bench.team.core().items : null;
-            repairEnabled = tryConsumeRepairGel(inv);
+        if (bench == null) {
+            if (u.type() == powerArmorSuit) stripSuitPerks(u);
+            return;
         }
 
-        powerArmorSuit.rebuild(bench.weaponId, bench.armorId, sid, repairEnabled);
-        patchUnit(u);
+        if (bench.supportId.equals("repair")) {
+            ItemModule inv = bench.team.core() != null ? bench.team.core().items : null;
+            if (!tryConsumeRepairGel(inv)) {
+                u.abilities = withoutRepair(u.abilities);
+            }
+        }
+
+        u.maxHealth = powerArmorSuit.health;
+        u.health = u.maxHealth;
     }
 
     /** Returns true (and consumes {@link #REPAIR_GEL_COST} Nanite Gel from the core)
@@ -132,14 +149,23 @@ public class Ic2mMod extends Mod {
         return true;
     }
 
-    private static void patchUnit(Unit u) {
-        u.maxHealth = powerArmorSuit.health;
+    /** Drop the regenerating repair field from a spawned unit (gel unavailable). */
+    private static Ability[] withoutRepair(Ability[] src) {
+        int kept = 0;
+        for (Ability a : src) if (!(a instanceof RepairFieldAbility)) kept++;
+        if (kept == src.length) return src;
+        Ability[] out = new Ability[kept];
+        int i = 0;
+        for (Ability a : src) if (!(a instanceof RepairFieldAbility)) out[i++] = a;
+        return out;
+    }
+
+    /** Remove the overpowered suit loadout from a unit that spawned as the suit but
+     *  belongs to a team with no active bench (global core unitType leakage). */
+    private static void stripSuitPerks(Unit u) {
+        u.abilities = new Ability[0];
+        u.maxHealth = 600f;
         u.health = u.maxHealth;
-        Ability[] arr = new Ability[powerArmorSuit.abilities.size];
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = powerArmorSuit.abilities.get(i);
-        }
-        u.abilities = arr;
     }
 
     private static void setCoreUnitType(UnitType t) {
