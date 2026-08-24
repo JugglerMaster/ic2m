@@ -3,7 +3,7 @@
     name: "ic2-re-battery-2",
     description: "Tier 2 IC2 RE Battery (2x2 merged). Stores and exchanges IC2 power with adjacent blocks.",
     category: "power",
-    buildVisibility: "shown",
+    buildVisibility: "hidden",
     size: 2,
     health: 400,
     hasItems: false,

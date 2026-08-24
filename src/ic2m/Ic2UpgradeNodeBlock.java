@@ -6,10 +6,13 @@ import arc.graphics.g2d.Fill;
 import arc.scene.ui.Image;
 import arc.scene.ui.layout.Table;
 import mindustry.Vars;
+import mindustry.ui.Styles;
+import mindustry.graphics.Pal;
 import mindustry.gen.Building;
 import mindustry.gen.Unit;
 import mindustry.type.Item;
 import mindustry.type.ItemStack;
+import mindustry.ui.Bar;
 import mindustry.world.Block;
 import mindustry.world.Tile;
 
@@ -189,23 +192,37 @@ public class Ic2UpgradeNodeBlock extends Ic2PowerBlock {
         public void buildConfiguration(Table table) {
             super.buildConfiguration(table);
             int tier = displayTier();
-            if (detectedTier != 0) {
-                table.add("Pattern valid - upgrading to Tier " + (tier + 1)).left().row();
-            } else {
-                table.add("No 2x2 pattern yet - place this node at a corner of 4 same-tier machines.").left().row();
-            }
-            ItemStack[] reqs = requirements(tier);
-            if (reqs.length == 0) {
-                table.add("Required items: none (EU charge only)").left().row();
-            } else {
-                for (ItemStack s : reqs) {
-                    table.table(r -> {
-                        r.add(s.item.localizedName + ": " + items.get(s.item) + "/" + s.amount).left();
-                        r.add(new Image(s.item.uiIcon)).size(16).padLeft(4);
-                    }).fillX().row();
+
+            table.table(Styles.black3, p -> {
+                p.margin(10f);
+                if (detectedTier != 0) {
+                    p.add("Pattern valid - upgrading to Tier " + tier).color(Pal.accent).left().row();
+                } else {
+                    p.add("No 2x2 pattern yet").color(Pal.remove).left().row();
+                    p.add("Place this node at a corner of 4 same-tier machines.").color(Color.gray).left().row();
                 }
-            }
-            table.add("EU charge: " + (int) energy + "/" + (int) cost(tier)).left().row();
+
+                ItemStack[] reqs = requirements(tier);
+                if (reqs.length == 0) {
+                    p.add("Required items: none (EU charge only)").left().row();
+                } else {
+                    for (ItemStack s : reqs) {
+                        float have = items.get(s.item);
+                        float frac = Math.min(1f, have / (float) s.amount);
+                        p.table(r -> {
+                            r.left();
+                            r.add(new Image(s.item.uiIcon)).size(20).padRight(4);
+                            r.add(s.item.localizedName).left().growX();
+                            r.add((int) have + "/" + s.amount).right();
+                        }).fillX().row();
+                        p.add(new Bar("", Pal.accent, () -> frac)).fillX().height(4f).pad(0f, 0f, 6f, 0f).row();
+                    }
+                }
+
+                float eFrac = Math.min(1f, energy / cost(tier));
+                p.add("EU charge: " + formatEU(energy) + "/" + formatEU(cost(tier))).left().row();
+                p.add(new Bar("", Pal.powerBar, () -> eFrac)).fillX().height(4f).row();
+            }).fillX();
         }
     }
 }

@@ -136,7 +136,7 @@ public class Ic2PowerBuilding extends Building {
     protected void distributePower() {
         if (energy <= 0f || !canProvideEnergy()) return;
 
-        int range = 2;
+        int range = 1;
         for (int dx = -range; dx <= range; dx++) {
             for (int dy = -range; dy <= range; dy++) {
                 if (dx == 0 && dy == 0) continue;
@@ -185,7 +185,7 @@ public class Ic2PowerBuilding extends Building {
             drawConnections();
         }
         if (Fonts.outline != null) {
-            Fonts.outline.draw((int) energy + "/" + (int) maxEnergy + " EU", x, y + block.size * Vars.tilesize / 2f + 16f, Pal.accent, 1f, false, Align.center);
+            Fonts.outline.draw(formatEU(energy) + "/" + formatEU(maxEnergy) + " EU", x, y + block.size * Vars.tilesize / 2f + 16f, Pal.accent, 0.4f, false, Align.center);
         }
     }
 
@@ -193,9 +193,11 @@ public class Ic2PowerBuilding extends Building {
     protected void drawRange() {
         if (this instanceof Ic2CableBlock.Ic2CableBuild cable) {
             Ic2CableBlock cableBlock = (Ic2CableBlock) cable.block;
-            Drawf.dashCircle(x, y, cableBlock.nodeRange * Vars.tilesize, cableBlock.highVoltage ? Pal.powerLight : Pal.accent);
-        } else {
-            Drawf.dashSquare(Pal.accent, x, y, 5f * Vars.tilesize);
+            float r = cableBlock.nodeRange * Vars.tilesize;
+            Draw.color(cableBlock.highVoltage ? Pal.powerLight : Pal.accent);
+            Lines.stroke(1.5f);
+            Lines.circle(x, y, r);
+            Draw.reset();
         }
     }
 
@@ -216,6 +218,13 @@ public class Ic2PowerBuilding extends Building {
                 Draw.reset();
             }
         }
+    }
+
+    /** Compact EU label, e.g. 1200 -> "1.2k", 1080000 -> "1.1M". */
+    protected String formatEU(float value) {
+        if (value >= 1_000_000f) return String.format("%.1fM", value / 1_000_000f);
+        if (value >= 1_000f) return String.format("%.1fk", value / 1_000f);
+        return String.valueOf((int) value);
     }
 
     protected void drawEnergyBar() {

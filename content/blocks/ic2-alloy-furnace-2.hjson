@@ -3,7 +3,7 @@
     name: "ic2-alloy-furnace-2",
     description: "Tier 2 IC2 Alloy Furnace (2x2 merged). Smelts dusts to ingots and alloys ingots together using IC2 power.",
     category: "crafting",
-    buildVisibility: "shown",
+    buildVisibility: "hidden",
     size: 2,
     health: 600,
     hasItems: true,

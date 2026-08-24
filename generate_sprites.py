@@ -164,29 +164,18 @@ def make_dust(color, name):
 # === BLOCK SPRITES ===
 
 def make_solar_panel():
-    """Solar panel with grid lines and blue cells."""
+    """Single solar pane with a white frame (tier 1)."""
     img = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    # Metal frame
-    draw.rectangle([1, 1, 30, 30], fill=(80, 80, 90))
-    draw_border(draw, (1, 1, 30, 30), (100, 100, 120))
-    # Solar cells (3x3 grid)
-    cell_colors = [(30, 40, 100), (25, 35, 90), (35, 45, 110),
-                   (28, 38, 95), (32, 42, 105), (26, 36, 92),
-                   (33, 43, 108), (29, 39, 98), (31, 41, 102)]
-    idx = 0
-    for row in range(3):
-        for col in range(3):
-            x0 = 4 + col * 9
-            y0 = 4 + row * 9
-            c = cell_colors[idx % len(cell_colors)]
-            gradient_rect(draw, (x0, y0, x0 + 7, y0 + 7), shade(c, 1.3), shade(c, 0.7))
-            draw.line([(x0, y0 + 7), (x0 + 7, y0 + 7)], fill=shade(c, 0.5), width=1)
-            draw.line([(x0 + 7, y0), (x0 + 7, y0 + 7)], fill=shade(c, 0.5), width=1)
-            idx += 1
-    # Highlight reflection
-    draw.line([(5, 5), (12, 5)], fill=(255, 255, 255, 60), width=1)
-    draw.line([(5, 5), (5, 12)], fill=(255, 255, 255, 40), width=1)
+    # Solid white frame.
+    draw.rectangle([1, 1, 30, 30], fill=(235, 235, 240))
+    # Single dark-blue cell inside the frame.
+    gradient_rect(draw, (4, 4, 27, 27), shade((30, 50, 120), 1.3), shade((30, 50, 120), 0.7))
+    draw.line([(15, 4), (15, 27)], fill=shade((30, 50, 120), 0.5), width=1)
+    draw.line([(4, 15), (27, 15)], fill=shade((30, 50, 120), 0.5), width=1)
+    # Highlight reflection.
+    draw.line([(5, 5), (12, 5)], fill=(255, 255, 255, 70), width=1)
+    draw.line([(5, 5), (5, 12)], fill=(255, 255, 255, 50), width=1)
     return img
 
 def make_battery():
@@ -300,6 +289,28 @@ def make_transformer():
     return img
 
 
+def make_tiered(base_fn, n, frame_color):
+    """Compose an n x n grid of a base 32x32 machine sprite into one larger,
+    properly-sized sprite for tier-2/3 (size n) blocks, with a tier-colored
+    outer frame. The grid of sub-units plus the frame makes machine size and
+    tier obvious."""
+    base = base_fn().convert('RGBA')
+    size = n * SIZE
+    img = Image.new('RGBA', (size, size), (46, 48, 56, 255))
+    for r in range(n):
+        for c in range(n):
+            img.paste(base, (c * SIZE, r * SIZE), base)
+    draw = ImageDraw.Draw(img)
+    # Faint dividers so sub-units read as cells of one machine.
+    for i in range(1, n):
+        draw.line([(i * SIZE, 2), (i * SIZE, size - 3)], fill=(0, 0, 0, 70), width=1)
+        draw.line([(2, i * SIZE), (size - 3, i * SIZE)], fill=(0, 0, 0, 70), width=1)
+    # Thick tier-colored outer frame to unify the whole block.
+    draw.rectangle([1, 1, size - 2, size - 1], outline=frame_color, width=2)
+    draw.rectangle([0, 0, size - 1, size - 1], outline=shade(frame_color, 0.6), width=1)
+    return img
+
+
 # === POWER ARMOR SUIT (mech) SPRITES ===
 
 def make_power_armor_body():
@@ -381,6 +392,14 @@ if __name__ == "__main__":
         "sprites/blocks/ic2-battery.png": make_battery(),
         "sprites/blocks/ic2-macerator.png": make_macerator(),
         "sprites/blocks/ic2-alloy-furnace.png": make_alloy_furnace(),
+        "sprites/blocks/ic2-solar-panel-2.png": make_tiered(make_solar_panel, 2, (130, 200, 255)),
+        "sprites/blocks/ic2-solar-panel-3.png": make_tiered(make_solar_panel, 3, (240, 200, 70)),
+        "sprites/blocks/ic2-macerator-2.png": make_tiered(make_macerator, 2, (130, 200, 255)),
+        "sprites/blocks/ic2-macerator-3.png": make_tiered(make_macerator, 3, (240, 200, 70)),
+        "sprites/blocks/ic2-re-battery-2.png": make_tiered(make_battery, 2, (130, 200, 255)),
+        "sprites/blocks/ic2-re-battery-3.png": make_tiered(make_battery, 3, (240, 200, 70)),
+        "sprites/blocks/ic2-alloy-furnace-2.png": make_tiered(make_alloy_furnace, 2, (130, 200, 255)),
+        "sprites/blocks/ic2-alloy-furnace-3.png": make_tiered(make_alloy_furnace, 3, (240, 200, 70)),
         "sprites/blocks/ic2-lv-cable.png": make_cable((85, 95, 105), (70, 180, 130), (110, 125, 135)),
         "sprites/blocks/ic2-hv-cable.png": make_cable((80, 75, 85), (220, 85, 55), (135, 110, 125), True),
         "sprites/blocks/ic2-transformer.png": make_transformer(),

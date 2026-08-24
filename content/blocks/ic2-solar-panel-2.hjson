@@ -3,7 +3,7 @@
     name: "ic2-solar-panel-2",
     description: "Tier 2 IC2 Solar Panel (2x2 merged). Generates IC2 power from sunlight and distributes to IC2 blocks within 2 tiles.",
     category: "power",
-    buildVisibility: "shown",
+    buildVisibility: "hidden",
     size: 2,
     health: 400,
     hasItems: true,

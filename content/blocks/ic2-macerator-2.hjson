@@ -3,7 +3,7 @@
     name: "ic2-macerator-2",
     description: "Tier 2 IC2 Macerator (2x2 merged). Doubles ore output: processes 1 ore into 2 dusts using IC2 power.",
     category: "crafting",
-    buildVisibility: "shown",
+    buildVisibility: "hidden",
     size: 2,
     health: 600,
     hasItems: true,

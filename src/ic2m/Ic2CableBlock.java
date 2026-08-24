@@ -57,7 +57,10 @@ public class Ic2CableBlock extends Ic2PowerBlock {
         super.drawPlace(x, y, rotation, valid);
         float cx = x * Vars.tilesize + Vars.tilesize / 2f;
         float cy = y * Vars.tilesize + Vars.tilesize / 2f;
-        Drawf.dashCircle(cx, cy, nodeRange * Vars.tilesize, highVoltage ? Pal.powerLight : Pal.accent);
+        Draw.color(highVoltage ? Pal.powerLight : Pal.accent);
+        Lines.stroke(1.5f);
+        Lines.circle(cx, cy, nodeRange * Vars.tilesize);
+        Draw.reset();
     }
 
     public class Ic2CableBuild extends Ic2PowerBuilding {
