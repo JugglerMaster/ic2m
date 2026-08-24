@@ -31,11 +31,11 @@ public class Ic2PowerBuilding extends Building {
     /** Tier baked into the block definition (read from hjson). */
     public int baseTier = 0;
 
-    /** Direction (Geometry.d4 index: 0=right,1=up,2=left,3=down) this block accepts EU from; -1 = any side. */
-    public int inputRotation = -1;
+    /** Side (0=right,1=up,2=left,3=down) this block outputs EU to; -1 = any side. Used by batteries. */
+    public int outputRotation = -1;
 
     /** Unit offsets for each rotation index: 0=right, 1=up, 2=left, 3=down. */
-    private static final int[][] D4 = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+    protected static final int[][] D4 = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
 
     public float getEnergy() { return energy; }
     public float getMaxEnergy() { return maxEnergy; }
@@ -103,29 +103,29 @@ public class Ic2PowerBuilding extends Building {
 
     /** Whether this block will accept EU pushed from the given (provider) building. */
     public boolean acceptsFrom(Building source) {
-        if (!canAcceptEnergy()) return false;
-        if (inputRotation < 0) return true;
-        int sx = source.tile.x - tile.x;
-        int sy = source.tile.y - tile.y;
-        return D4[inputRotation][0] == sx && D4[inputRotation][1] == sy;
+        return canAcceptEnergy();
     }
 
-    public void cycleInput() {
-        inputRotation = inputRotation >= 3 ? -1 : inputRotation + 1;
+    public void cycleOutput() {
+        outputRotation = outputRotation >= 3 ? -1 : outputRotation + 1;
     }
 
-    protected String inputDirName(int r) {
-        return r < 0 ? "any side" : r == 0 ? "right" : r == 1 ? "up" : r == 2 ? "left" : "down";
+    protected String outputDirName(int r) {
+        return r < 0 ? "all sides" : r == 0 ? "right" : r == 1 ? "up" : r == 2 ? "left" : "down";
     }
 
-    /** Adds a "set input side" control to a block's config panel (no-op for non-acceptors like solar). */
-    protected void addInputControl(Table table) {
-        if (!canAcceptEnergy()) return;
+    /** Adds an "output side" control to a block's config panel (batteries). */
+    protected void addOutputControl(Table table) {
         TextButton btn = new TextButton("", Styles.defaultt);
-        btn.update(() -> btn.setText("Input side: " + inputDirName(inputRotation) + "   (tap to change)"));
-        btn.clicked(() -> cycleInput());
+        btn.update(() -> btn.setText("Output side: " + outputDirName(outputRotation) + "   (tap to change)"));
+        btn.clicked(() -> cycleOutput());
         table.row();
         table.add(btn).size(280f, 44f);
+    }
+
+    /** Whether this block may push EU out to the given neighbour; batteries restrict to one side. */
+    protected boolean canOutputTo(Building other) {
+        return true;
     }
 
     /** Pushes `amount` EU directly into neighbouring acceptors without storing it (used by solar panels). */
@@ -216,7 +216,7 @@ public class Ic2PowerBuilding extends Building {
                 if (dx == 0 && dy == 0) continue;
                 Building other = Vars.world.build(tile.x + dx, tile.y + dy);
                 if (other instanceof Ic2PowerBuilding ic2b && canConnectEnergy(other)
-                    && ic2b.acceptsFrom(this) && ic2b.energy < ic2b.maxEnergy) {
+                    && ic2b.acceptsFrom(this) && canOutputTo(other) && ic2b.energy < ic2b.maxEnergy) {
                     float space = ic2b.maxEnergy - ic2b.energy;
                     float toSend = Math.min(energy, Math.min(space, powerTransferRate()));
                     if (toSend > 0f) {
@@ -267,14 +267,14 @@ public class Ic2PowerBuilding extends Building {
         if (!(this instanceof Ic2CableBlock.Ic2CableBuild)) {
             drawConnections();
         }
-        drawInputLink();
+        drawOutputLink();
     }
 
-    /** Red line from this block to the tile it accepts EU from (its configured input side). */
-    protected void drawInputLink() {
-        if (inputRotation < 0) return;
-        float tx = (tile.x + D4[inputRotation][0]) * Vars.tilesize + Vars.tilesize / 2f;
-        float ty = (tile.y + D4[inputRotation][1]) * Vars.tilesize + Vars.tilesize / 2f;
+    /** Red line from this block to its configured output side (batteries). */
+    protected void drawOutputLink() {
+        if (outputRotation < 0) return;
+        float tx = (tile.x + D4[outputRotation][0]) * Vars.tilesize + Vars.tilesize / 2f;
+        float ty = (tile.y + D4[outputRotation][1]) * Vars.tilesize + Vars.tilesize / 2f;
         Draw.z(Layer.power + 1f);
         Draw.color(Pal.remove);
         Lines.stroke(2f);

@@ -74,8 +74,6 @@ public class SolarPanel extends Ic2PowerBlock {
             }).fillX().pad(4);
             table.row();
             table.add("Tier 2-3 upgrades are performed by the IC2 Upgrade Node (arrange a 2x2 with this block).").left().pad(4);
-            table.row();
-            addInputControl(table);
         }
 
         @Override

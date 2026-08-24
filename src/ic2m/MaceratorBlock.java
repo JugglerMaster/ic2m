@@ -164,7 +164,6 @@ public class MaceratorBlock extends Ic2PowerBlock {
             addRecipe(table, Items.scrap, Items.scrap);
             table.add(outputStatus()).left().row();
             table.add("Tier 2-3 upgrades are performed by the IC2 Upgrade Node (2x2 with this block).").left().row();
-            addInputControl(table);
         }
 
         @Override

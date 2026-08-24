@@ -94,7 +94,6 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
             table.add("Connected HV nodes: " + connectedNodes());
             table.row();
             table.add("EU buffer: " + (int)energy + "/" + (int)maxEnergy);
-            addInputControl(table);
         }
 
         @Override

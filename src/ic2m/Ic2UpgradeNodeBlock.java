@@ -223,7 +223,6 @@ public class Ic2UpgradeNodeBlock extends Ic2PowerBlock {
                 p.add("EU charge: " + formatEU(energy) + "/" + formatEU(cost(tier))).left().padTop(6f).padBottom(4f).row();
                 p.add(new Bar("", Pal.powerBar, () -> eFrac)).fillX().height(4f).row();
             }).fillX();
-            addInputControl(table);
         }
     }
 }

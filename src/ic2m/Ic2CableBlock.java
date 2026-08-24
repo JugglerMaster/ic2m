@@ -137,7 +137,6 @@ public class Ic2CableBlock extends Ic2PowerBlock {
             table.add("Range: " + nodeRange + " tiles").left().row();
             table.add("Transfer: " + (int)transferRate + " EU/t | Loss: " + (int)(loss * 100f) + "%").left().row();
             table.add("Manual links: " + links.size + " (tap compatible nodes to toggle)").left();
-            addInputControl(table);
         }
 
         @Override

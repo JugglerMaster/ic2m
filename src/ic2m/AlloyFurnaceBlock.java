@@ -278,7 +278,6 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
                 + " | Power: " + String.format("%.1f", powerForTier(upgradeTier, mode)) + " EU/t").left().row();
             table.add(outputStatus()).left().row();
             table.add("Tier 2-3 upgrades are performed by the IC2 Upgrade Node (2x2 with this block).").left().row();
-            addInputControl(table);
         }
 
         private void addRecipe(Table table, Item input, Item output) {

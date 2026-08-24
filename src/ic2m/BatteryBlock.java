@@ -1,5 +1,8 @@
 package ic2m;
 
+import arc.scene.ui.layout.Table;
+import arc.util.io.Reads;
+import arc.util.io.Writes;
 import mindustry.gen.Building;
 import mindustry.type.ItemStack;
 
@@ -11,7 +14,7 @@ public class BatteryBlock extends Ic2PowerBlock {
 
     public class BatteryBuild extends Ic2PowerBuilding {
         @Override
-        public byte version() { return 1; }
+        public byte version() { return 2; }
 
         @Override
         protected boolean readsOutputState(byte revision) { return false; }
@@ -36,6 +39,46 @@ public class BatteryBlock extends Ic2PowerBlock {
 
         @Override
         public boolean canProvideEnergy() { return true; }
+
+        @Override
+        public boolean acceptsFrom(Building source) {
+            if (!canAcceptEnergy()) return false;
+            if (outputRotation >= 0) {
+                int dx = source.tile.x - tile.x;
+                int dy = source.tile.y - tile.y;
+                if (D4[outputRotation][0] == dx && D4[outputRotation][1] == dy) return false;
+            }
+            return true;
+        }
+
+        @Override
+        protected boolean canOutputTo(Building other) {
+            if (outputRotation < 0) return true;
+            int dx = other.tile.x - tile.x;
+            int dy = other.tile.y - tile.y;
+            return D4[outputRotation][0] == dx && D4[outputRotation][1] == dy;
+        }
+
+        @Override
+        public void buildConfiguration(Table table) {
+            super.buildConfiguration(table);
+            table.row();
+            table.add("Battery Tier " + (upgradeTier + 1)).left().row();
+            table.add("Storage: " + (int) maxEnergy + " EU").left().row();
+            addOutputControl(table);
+        }
+
+        @Override
+        public void write(Writes write) {
+            super.write(write);
+            write.i(outputRotation);
+        }
+
+        @Override
+        public void read(Reads read, byte revision) {
+            super.read(read, revision);
+            if (revision >= 2) outputRotation = read.i();
+        }
 
         @Override
         public ItemStack[] upgradeRequirements(int tier) {
