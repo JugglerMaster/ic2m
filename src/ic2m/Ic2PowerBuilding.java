@@ -78,6 +78,9 @@ public class Ic2PowerBuilding extends Building {
     public boolean canAcceptEnergy() { return true; }
     public boolean canProvideEnergy() { return true; }
 
+    /** True for blocks that only produce EU (e.g. solar panels) so cables accept them. */
+    protected boolean isGenerator() { return false; }
+
     /** Per-tick EU a block may push to one neighbour; scales 10x8^tier so big buffers can actually fill. */
     protected float powerTransferRate() {
         return upgradeTier == 0 ? 32f : upgradeTier == 1 ? 128f : 512f;
@@ -228,16 +231,19 @@ public class Ic2PowerBuilding extends Building {
 
     protected boolean canConnectEnergy(Building other) {
         if (!(other instanceof Ic2PowerBuilding)) return false;
+        Ic2PowerBuilding o = (Ic2PowerBuilding) other;
         boolean thisCable = this instanceof Ic2CableBlock.Ic2CableBuild;
-        boolean otherCable = other instanceof Ic2CableBlock.Ic2CableBuild;
+        boolean otherCable = o instanceof Ic2CableBlock.Ic2CableBuild;
         if (thisCable && !otherCable) {
-            if (other instanceof Ic2TransformerBlock.Ic2TransformerBuild) return true;
-            if (other instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild) return true;
+            if (o instanceof Ic2TransformerBlock.Ic2TransformerBuild) return true;
+            if (o instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild) return true;
+            if (o.isGenerator()) return true;
             return false;
         }
         if (!thisCable && otherCable) {
             if (this instanceof Ic2TransformerBlock.Ic2TransformerBuild) return true;
             if (this instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild) return true;
+            if (this.isGenerator()) return true;
             return false;
         }
         return true;

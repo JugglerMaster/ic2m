@@ -48,18 +48,16 @@ public class Ic2PowerBlock extends Block {
         return 2;
     }
 
-    /** Placement preview: show the block ghost plus a faint circle covering the
-     *  adjacent tiles it exchanges EU with (cables draw their own range circle). */
+    /** Placement preview: Mindustry already draws the block ghost, so here we only
+     *  add a faint circle covering the adjacent tiles it exchanges EU with. */
     @Override
     public void drawPlace(int x, int y, int rotation, boolean valid) {
+        if (this instanceof Ic2CableBlock) return;
         float cx = x * Vars.tilesize + Vars.tilesize * size / 2f;
         float cy = y * Vars.tilesize + Vars.tilesize * size / 2f;
-        Draw.rect(region, cx, cy);
-        if (!(this instanceof Ic2CableBlock)) {
-            Draw.color(Pal.accent);
-            Lines.stroke(1f);
-            Lines.circle(cx, cy, 1.5f * Vars.tilesize);
-            Draw.reset();
-        }
+        Draw.color(Pal.accent);
+        Lines.stroke(1f);
+        Lines.circle(cx, cy, 1.5f * Vars.tilesize);
+        Draw.reset();
     }
 }

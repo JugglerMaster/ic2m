@@ -59,6 +59,9 @@ public class SolarPanel extends Ic2PowerBlock {
         public boolean canAcceptEnergy() { return false; }
 
         @Override
+        protected boolean isGenerator() { return true; }
+
+        @Override
         public void buildConfiguration(Table table) {
             super.buildConfiguration(table);
             table.row();
