@@ -21,15 +21,17 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
     public static final int MODE_SMELT = 0;
     public static final int MODE_ALLOY = 1;
 
-    public float powerPerTick = 5f;
+    public float powerPerTick = 3f;
+    public float alloyPowerPerTick = 16f;
     public float craftTime = 180f;
 
     transient Item copperDust, leadDust, titaniumDust, thoriumDust, graphiteDust, coalDust;
     transient Item copperIngot, leadIngot, titaniumIngot, thoriumIngot, graphiteIngot, coalIngot;
     transient Item titaniumCarbide, thoriumAlloy;
 
-    public float powerForTier(int tier) {
-        return powerPerTick * (tier == 0 ? 1f : tier == 1 ? 1.6f : 2.4f);
+    public float powerForTier(int tier, int mode) {
+        float base = mode == MODE_ALLOY ? alloyPowerPerTick : powerPerTick;
+        return base * (tier == 0 ? 1f : tier == 1 ? 1.6f : 2.4f);
     }
 
     public float craftTimeForTier(int tier) {
@@ -118,7 +120,7 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
     @Override
     public void setStats(){
         super.setStats();
-        stats.add(Stat.powerUse, "[orange]@[] EU/t", String.format("%.1f", powerPerTick));
+        stats.add(Stat.powerUse, "Smelt " + (int)powerPerTick + " EU/t, Alloy " + (int)alloyPowerPerTick + " EU/t (base tier)");
         stats.add(Stat.input, "Dust -> matching ingot; Copper + Lead -> Surge Alloy; Titanium + Graphite -> Titanium Carbide; Thorium + Lead -> Thorium Alloy");
     }
 
@@ -146,10 +148,10 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
 
             int parallel = block.size * block.size;
             if (output != null && currentInput != null) {
-                float power = powerForTier(upgradeTier);
-                if (energy >= power) {
-                    energy -= power;
-                    progress += 1f;
+                float power = powerForTier(upgradeTier, mode);
+                float eff = consumePower(power);
+                if (eff > 0f) {
+                    progress += eff;
                     if (progress >= craftTimeForTier(upgradeTier)) {
                         if (storeOutput(output, outputAmount)) {
                             progress = 0f;
@@ -273,9 +275,10 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
             table.row();
             table.add("Furnace Tier " + (upgradeTier + 1)).left().row();
             table.add("Speed: " + String.format("%.0f%%", craftTime / craftTimeForTier(upgradeTier) * 100f)
-                + " | Power: " + String.format("%.1f", powerForTier(upgradeTier)) + " EU/t").left().row();
+                + " | Power: " + String.format("%.1f", powerForTier(upgradeTier, mode)) + " EU/t").left().row();
             table.add(outputStatus()).left().row();
             table.add("Tier 2-3 upgrades are performed by the IC2 Upgrade Node (2x2 with this block).").left().row();
+            addInputControl(table);
         }
 
         private void addRecipe(Table table, Item input, Item output) {

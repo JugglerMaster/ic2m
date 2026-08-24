@@ -16,7 +16,7 @@ import mindustry.ui.Styles;
 import mindustry.world.meta.Stat;
 
 public class MaceratorBlock extends Ic2PowerBlock {
-    public float powerPerTick = 5f;
+    public float powerPerTick = 2f;
     public float craftTime = 180f;
 
     public MaceratorBlock(String name) {
@@ -100,9 +100,9 @@ public class MaceratorBlock extends Ic2PowerBlock {
                 Item dust = getDustForOre(currentOre);
                 if (dust != null && canStoreOutput(dust, outputCount)) {
                     float power = powerForTier(upgradeTier);
-                    if (energy >= power) {
-                        energy -= power;
-                        progress += 1f;
+                    float eff = consumePower(power);
+                    if (eff > 0f) {
+                        progress += eff;
                         if (progress >= craftTimeForTier(upgradeTier)) {
                             if (storeOutput(dust, outputCount)) {
                                 progress = 0f;
@@ -164,6 +164,7 @@ public class MaceratorBlock extends Ic2PowerBlock {
             addRecipe(table, Items.scrap, Items.scrap);
             table.add(outputStatus()).left().row();
             table.add("Tier 2-3 upgrades are performed by the IC2 Upgrade Node (2x2 with this block).").left().row();
+            addInputControl(table);
         }
 
         @Override

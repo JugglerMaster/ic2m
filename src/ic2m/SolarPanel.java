@@ -25,7 +25,7 @@ public class SolarPanel extends Ic2PowerBlock {
     @Override
     public void setStats(){
         super.setStats();
-        stats.add(Stat.basePowerGeneration, "[orange]@[] EU/t", String.format("%.1f", basePowerPerTick * size * size));
+        stats.add(Stat.basePowerGeneration, "T1: 1 / T2: 8 / T3: 64 EU/t");
     }
 
     public class SolarPanelBuild extends Ic2PowerBuilding {
@@ -45,17 +45,18 @@ public class SolarPanel extends Ic2PowerBlock {
 
             float multiplier = Vars.state.rules.solarMultiplier;
             if (multiplier > 0f) {
-                float generated = currentPowerPerTick * multiplier;
-                energy = Math.min(maxEnergy, energy + generated);
+                injectPower(currentPowerPerTick * multiplier);
             }
         }
 
         void recalculateStats() {
-            float mult = block.size * block.size * tierMultiplier(upgradeTier);
-            currentPowerPerTick = basePowerPerTick * mult;
-            maxEnergy = basePowerCapacity * mult;
+            currentPowerPerTick = upgradeTier == 0 ? 1f : upgradeTier == 1 ? 8f : 64f;
+            maxEnergy = 0f;
             if (energy > maxEnergy) energy = maxEnergy;
         }
+
+        @Override
+        public boolean canAcceptEnergy() { return false; }
 
         @Override
         public void buildConfiguration(Table table) {
@@ -70,6 +71,8 @@ public class SolarPanel extends Ic2PowerBlock {
             }).fillX().pad(4);
             table.row();
             table.add("Tier 2-3 upgrades are performed by the IC2 Upgrade Node (arrange a 2x2 with this block).").left().pad(4);
+            table.row();
+            addInputControl(table);
         }
 
         @Override

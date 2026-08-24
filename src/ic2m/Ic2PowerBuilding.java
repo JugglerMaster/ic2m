@@ -4,6 +4,8 @@ import arc.graphics.Color;
 import arc.graphics.g2d.Draw;
 import arc.graphics.g2d.Fill;
 import arc.graphics.g2d.Lines;
+import arc.scene.ui.TextButton;
+import arc.scene.ui.layout.Table;
 import arc.util.Align;
 import arc.util.io.Reads;
 import arc.util.io.Writes;
@@ -14,7 +16,8 @@ import mindustry.graphics.Layer;
 import mindustry.graphics.Pal;
 import mindustry.type.Item;
 import mindustry.type.ItemStack;
-import mindustry.ui.Fonts;
+import mindustry.ui.Styles;
+
 
 public class Ic2PowerBuilding extends Building {
     public float energy = 0f;
@@ -27,6 +30,12 @@ public class Ic2PowerBuilding extends Building {
     public int upgradeTier = 0;
     /** Tier baked into the block definition (read from hjson). */
     public int baseTier = 0;
+
+    /** Direction (Geometry.d4 index: 0=right,1=up,2=left,3=down) this block accepts EU from; -1 = any side. */
+    public int inputRotation = -1;
+
+    /** Unit offsets for each rotation index: 0=right, 1=up, 2=left, 3=down. */
+    private static final int[][] D4 = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
 
     public float getEnergy() { return energy; }
     public float getMaxEnergy() { return maxEnergy; }
@@ -69,6 +78,11 @@ public class Ic2PowerBuilding extends Building {
     public boolean canAcceptEnergy() { return true; }
     public boolean canProvideEnergy() { return true; }
 
+    /** Per-tick EU a block may push to one neighbour; scales 10x8^tier so big buffers can actually fill. */
+    protected float powerTransferRate() {
+        return upgradeTier == 0 ? 32f : upgradeTier == 1 ? 128f : 512f;
+    }
+
     public float acceptEnergy(float amount) {
         if (!canAcceptEnergy()) return 0f;
         float space = maxEnergy - energy;
@@ -82,6 +96,63 @@ public class Ic2PowerBuilding extends Building {
         float provided = Math.min(amount, energy);
         energy -= provided;
         return provided;
+    }
+
+    /** Whether this block will accept EU pushed from the given (provider) building. */
+    public boolean acceptsFrom(Building source) {
+        if (!canAcceptEnergy()) return false;
+        if (inputRotation < 0) return true;
+        int sx = source.tile.x - tile.x;
+        int sy = source.tile.y - tile.y;
+        return D4[inputRotation][0] == sx && D4[inputRotation][1] == sy;
+    }
+
+    public void cycleInput() {
+        inputRotation = inputRotation >= 3 ? -1 : inputRotation + 1;
+    }
+
+    protected String inputDirName(int r) {
+        return r < 0 ? "any side" : r == 0 ? "right" : r == 1 ? "up" : r == 2 ? "left" : "down";
+    }
+
+    /** Adds a "set input side" control to a block's config panel (no-op for non-acceptors like solar). */
+    protected void addInputControl(Table table) {
+        if (!canAcceptEnergy()) return;
+        TextButton btn = new TextButton("", Styles.defaultt);
+        btn.update(() -> btn.setText("Input side: " + inputDirName(inputRotation) + "   (tap to change)"));
+        btn.clicked(() -> cycleInput());
+        table.row();
+        table.add(btn).size(280f, 44f);
+    }
+
+    /** Pushes `amount` EU directly into neighbouring acceptors without storing it (used by solar panels). */
+    protected void injectPower(float amount) {
+        if (amount <= 0f) return;
+        int range = 1;
+        for (int dx = -range; dx <= range; dx++) {
+            for (int dy = -range; dy <= range; dy++) {
+                if (dx == 0 && dy == 0) continue;
+                Building other = Vars.world.build(tile.x + dx, tile.y + dy);
+                if (other instanceof Ic2PowerBuilding target && canConnectEnergy(other) && target.acceptsFrom(this)) {
+                    float space = target.maxEnergy - target.energy;
+                    float toSend = Math.min(amount, space);
+                    if (toSend > 0f) {
+                        float remainder = target.acceptEnergy(toSend);
+                        amount -= toSend - remainder;
+                    }
+                    if (amount <= 0f) return;
+                }
+            }
+        }
+    }
+
+    /** Consumes up to `needed` EU for one craft tick; returns the progress increment (penalized when starved). */
+    protected float consumePower(float needed) {
+        float have = Math.min(energy, needed);
+        energy -= have;
+        if (have >= needed - 1e-4f) return 1f;
+        if (have <= 1e-4f) return 0f;
+        return (have / needed) * 0.5f;
     }
 
     protected boolean storeOutput(Item item, int amount) {
@@ -142,9 +213,9 @@ public class Ic2PowerBuilding extends Building {
                 if (dx == 0 && dy == 0) continue;
                 Building other = Vars.world.build(tile.x + dx, tile.y + dy);
                 if (other instanceof Ic2PowerBuilding ic2b && canConnectEnergy(other)
-                    && ic2b.canAcceptEnergy() && ic2b.energy < ic2b.maxEnergy) {
+                    && ic2b.acceptsFrom(this) && ic2b.energy < ic2b.maxEnergy) {
                     float space = ic2b.maxEnergy - ic2b.energy;
-                    float toSend = Math.min(energy, Math.min(space, 10f));
+                    float toSend = Math.min(energy, Math.min(space, powerTransferRate()));
                     if (toSend > 0f) {
                         float remainder = ic2b.acceptEnergy(toSend);
                         energy -= toSend - remainder;
@@ -157,11 +228,17 @@ public class Ic2PowerBuilding extends Building {
 
     protected boolean canConnectEnergy(Building other) {
         if (!(other instanceof Ic2PowerBuilding)) return false;
-        if (other instanceof Ic2CableBlock.Ic2CableBuild cable) {
-            return !((Ic2CableBlock)cable.block).highVoltage;
+        boolean thisCable = this instanceof Ic2CableBlock.Ic2CableBuild;
+        boolean otherCable = other instanceof Ic2CableBlock.Ic2CableBuild;
+        if (thisCable && !otherCable) {
+            if (other instanceof Ic2TransformerBlock.Ic2TransformerBuild) return true;
+            if (other instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild) return true;
+            return false;
         }
-        if (other instanceof Ic2TransformerBlock.Ic2TransformerBuild transformer) {
-            return transformer.mode == Ic2TransformerBlock.MODE_STEP_UP;
+        if (!thisCable && otherCable) {
+            if (this instanceof Ic2TransformerBlock.Ic2TransformerBuild) return true;
+            if (this instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild) return true;
+            return false;
         }
         return true;
     }
@@ -184,9 +261,19 @@ public class Ic2PowerBuilding extends Building {
         if (!(this instanceof Ic2CableBlock.Ic2CableBuild)) {
             drawConnections();
         }
-        if (Fonts.outline != null) {
-            Fonts.outline.draw(formatEU(energy) + "/" + formatEU(maxEnergy) + " EU", x, y + block.size * Vars.tilesize / 2f + 16f, Pal.accent, 0.4f, false, Align.center);
-        }
+        drawInputLink();
+    }
+
+    /** Red line from this block to the tile it accepts EU from (its configured input side). */
+    protected void drawInputLink() {
+        if (inputRotation < 0) return;
+        float tx = (tile.x + D4[inputRotation][0]) * Vars.tilesize + Vars.tilesize / 2f;
+        float ty = (tile.y + D4[inputRotation][1]) * Vars.tilesize + Vars.tilesize / 2f;
+        Draw.z(Layer.power + 1f);
+        Draw.color(Pal.remove);
+        Lines.stroke(2f);
+        Lines.line(x, y, tx, ty);
+        Draw.reset();
     }
 
     /** Draws the tile area this building can exchange EU across; circle for cables, square for LV blocks. */
@@ -229,7 +316,7 @@ public class Ic2PowerBuilding extends Building {
 
     protected void drawEnergyBar() {
         boolean hv = this instanceof Ic2CableBlock.Ic2CableBuild cable && ((Ic2CableBlock) cable.block).highVoltage;
-        drawBar(x, y - block.size * Vars.tilesize / 2f + 3f, getEnergyPercentage(), hv ? Pal.powerLight : Pal.powerBar);
+        drawBar(x, y, getEnergyPercentage(), hv ? Pal.powerLight : Pal.powerBar);
     }
 
     protected void drawProgressBar() {
@@ -241,7 +328,7 @@ public class Ic2PowerBuilding extends Building {
     protected void drawBar(float cx, float cy, float fraction, Color color) {
         float size = block.size * Vars.tilesize;
         float w = size - 4f;
-        float h = 2.4f;
+        float h = 3f;
         float z = Draw.z();
         Draw.z(Layer.power + 1);
         Draw.color(0f, 0f, 0f, 0.7f);

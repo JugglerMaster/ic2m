@@ -26,7 +26,9 @@ public class BatteryBlock extends Ic2PowerBlock {
         }
 
         void recalculateStats() {
-            maxEnergy = basePowerCapacity * block.size * block.size * tierMultiplier(upgradeTier);
+            if (upgradeTier == 0) maxEnergy = 40_000f;
+            else if (upgradeTier == 1) maxEnergy = 300_000f;
+            else maxEnergy = 4_000_000f;
         }
 
         @Override

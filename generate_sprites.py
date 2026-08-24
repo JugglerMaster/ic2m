@@ -224,29 +224,48 @@ def make_macerator():
     draw.ellipse([13, 12, 19, 18], outline=(160, 160, 170), width=1)
     return img
 
-def make_alloy_furnace():
-    """Alloy furnace with fire and crucible."""
-    img = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
+def make_alloy_furnace(tier=1):
+    """Alloy furnace. Higher tiers read as the same machine, just hotter and
+    more detailed, since a tier is only a faster version of the last."""
+    size = (1 << (tier - 1)) * SIZE
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    # Body - dark iron
-    gradient_rect(draw, (3, 3, 28, 28), (80, 60, 50), (50, 35, 30))
-    draw_border(draw, (3, 3, 28, 28), (100, 80, 70))
-    # Fire opening
-    draw.rectangle([8, 14, 23, 25], fill=(30, 20, 15))
-    # Flames
-    flames = [(12, 22), (16, 20), (20, 22), (14, 18), (18, 19)]
-    for fx, fy in flames:
-        draw.rectangle([fx, fy, fx+1, fy+2], fill=(255, 160, 30))
-        draw.point((fx, fy-1), fill=(255, 200, 50))
-    # Crucible on top
-    draw.rectangle([10, 8, 21, 14], fill=(120, 80, 40))
-    draw.rectangle([11, 9, 20, 13], fill=(160, 100, 50))
-    # Metal pour
-    draw.line([(15, 14), (15, 16)], fill=(200, 150, 50), width=1)
-    draw.line([(16, 14), (16, 16)], fill=(220, 170, 60), width=1)
-    # Chimney
-    draw.rectangle([14, 3, 17, 8], fill=(70, 70, 80))
-    draw.rectangle([15, 4, 16, 7], fill=(50, 50, 60))
+    # Iron body.
+    gradient_rect(draw, (3, 3, size - 4, size - 4), (82, 62, 52), (48, 34, 28))
+    draw_border(draw, (3, 3, size - 4, size - 4), (104, 84, 72))
+    # Crucible on top.
+    cw = max(10, size // 3)
+    cx0 = (size - cw) // 2
+    draw.rectangle([cx0, 4, cx0 + cw, 4 + cw // 2], fill=(120, 80, 40))
+    draw.rectangle([cx0 + 1, 5, cx0 + cw - 1, 4 + cw // 2 - 1], fill=(165, 105, 55))
+    # Chimney.
+    draw.rectangle([size // 2 - 2, 1, size // 2 + 2, 5], fill=(70, 70, 80))
+    # Fire opening.
+    fw = max(8, size // 2 - 4)
+    fx0 = (size - fw) // 2
+    fy0 = size - 4 - fw
+    draw.rectangle([fx0, fy0, fx0 + fw, fy0 + fw], fill=(22, 14, 10))
+    # Flame palette per tier: orange -> blue -> white-blue (hotter).
+    flames = [
+        [(255, 150, 30), (255, 200, 60)],
+        [(255, 120, 50), (150, 200, 255)],
+        [(180, 220, 255), (235, 248, 255)],
+    ][min(tier, 3) - 1]
+    for i in range(3 + tier):
+        fx = int(fx0 + fw / 2 + (i - (3 + tier - 1) / 2) * (fw / (3 + tier)))
+        draw.rectangle([fx - 1, fy0 + 2, fx + 1, fy0 + fw - 1], fill=flames[0])
+        draw.point((fx, fy0 + 1), fill=flames[1])
+    # Metal pour from crucible to fire.
+    draw.line([(size // 2 - 1, 4 + cw // 2), (size // 2 - 1, fy0)], fill=(200, 150, 50))
+    draw.line([(size // 2 + 1, 4 + cw // 2), (size // 2 + 1, fy0)], fill=(225, 175, 65))
+    # Tier accents: hotter glow as it scales up.
+    if tier >= 2:
+        draw.ellipse([fx0 - 3, fy0 - 3, fx0 + fw + 3, fy0 + fw + 3], outline=flames[1], width=2)
+    if tier >= 3:
+        for (vx, vy) in [(5, size // 2), (size - 6, size // 2)]:
+            draw.ellipse([vx - 2, vy - 2, vx + 2, vy + 2], fill=flames[1])
+        draw.ellipse([size // 2 - 4, size // 2 - 4, size // 2 + 4, size // 2 + 4],
+                     fill=(flames[1][0] // 2, flames[1][1] // 2, flames[1][2] // 2, 140))
     return img
 
 def make_cable(body, core, accent, high_voltage=False):
@@ -309,9 +328,29 @@ def make_upgrade_node():
     return img
 
 
-def make_batbox():
+def make_power_node(tier=1):
+    """Power node: junction block bridging the cable network to machines.
+    Accent colour follows the voltage tier (LV/MV/HV)."""
+    accent = [(235, 200, 80), (130, 200, 255), (240, 200, 70)][min(tier, 3) - 1]
+    img = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    # Housing.
+    gradient_rect(draw, (3, 3, 28, 28), (70, 72, 82), (42, 44, 52))
+    draw_border(draw, (3, 3, 28, 28), (96, 100, 112))
+    # Four connection ports on each face.
+    for box in [(1, 13, 7, 18), (24, 13, 31, 18), (13, 1, 18, 7), (13, 24, 18, 31)]:
+        draw.rectangle(box, fill=(54, 56, 64))
+        draw.rectangle([box[0] + 1, box[1] + 1, box[2] - 1, box[3] - 1], fill=accent)
+    # Central hub.
+    draw.ellipse([10, 10, 21, 21], fill=(42, 44, 52), outline=accent, width=1)
+    draw.ellipse([13, 13, 18, 18], fill=accent)
+    draw.point((15, 15), fill=(255, 255, 255, 230))
+    return img
+
+
+def make_batbox(bs=2):
     """BatBox (tier 2 RE storage): wooden crate with a red energy cell."""
-    w = 2 * SIZE
+    w = bs * SIZE
     img = Image.new('RGBA', (w, w), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     # Wooden body.
@@ -338,9 +377,9 @@ def make_batbox():
     return img
 
 
-def make_mfsu():
+def make_mfsu(bs=4):
     """MFSu (tier 3 RE storage): advanced metallic unit with a glowing core."""
-    w = 3 * SIZE
+    w = bs * SIZE
     img = Image.new('RGBA', (w, w), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     # Metallic body.
@@ -354,7 +393,7 @@ def make_mfsu():
     draw.rectangle([ccx - 2, 8, ccx + 2, 4 + SIZE // 2], fill=(150, 150, 160))
     draw.ellipse([ccx - 4, 4, ccx + 4, 12], fill=(220, 80, 60))
     # Glowing core.
-    r = SIZE
+    r = w // 3
     draw.ellipse([ccx - r, ccy - r, ccx + r, ccy + r], fill=(40, 70, 90))
     draw.ellipse([ccx - r, ccy - r, ccx + r, ccy + r], outline=(120, 200, 230), width=2)
     draw.ellipse([ccx - r + 8, ccy - r + 8, ccx + r - 8, ccy + r - 8], fill=(60, 150, 200))
@@ -369,20 +408,21 @@ def make_mfsu():
     return img
 
 
-def make_tiered(base_fn, n, frame_color):
-    """Compose an n x n grid of a base 32x32 machine sprite into one larger,
-    properly-sized sprite for tier-2/3 (size n) blocks, with a tier-colored
-    outer frame. The grid of sub-units plus the frame makes machine size and
-    tier obvious."""
+def make_tiered(base_fn, tier, frame_color):
+    """Compose a grid of base 32x32 machine sprites into one larger,
+    properly-sized sprite for a tier block. Block footprint for tier N is
+    2^(N-1) tiles (1, 2, 4), so the sprite is that many base tiles squared,
+    with a tier-colored outer frame."""
+    bs = 1 << (tier - 1)
     base = base_fn().convert('RGBA')
-    size = n * SIZE
+    size = bs * SIZE
     img = Image.new('RGBA', (size, size), (46, 48, 56, 255))
-    for r in range(n):
-        for c in range(n):
+    for r in range(bs):
+        for c in range(bs):
             img.paste(base, (c * SIZE, r * SIZE), base)
     draw = ImageDraw.Draw(img)
     # Faint dividers so sub-units read as cells of one machine.
-    for i in range(1, n):
+    for i in range(1, bs):
         draw.line([(i * SIZE, 2), (i * SIZE, size - 3)], fill=(0, 0, 0, 70), width=1)
         draw.line([(2, i * SIZE), (size - 3, i * SIZE)], fill=(0, 0, 0, 70), width=1)
     # Thick tier-colored outer frame to unify the whole block.
@@ -471,19 +511,20 @@ if __name__ == "__main__":
         "sprites/blocks/ic2-solar-panel.png": make_solar_panel(),
         "sprites/blocks/ic2-battery.png": make_battery(),
         "sprites/blocks/ic2-macerator.png": make_macerator(),
-        "sprites/blocks/ic2-alloy-furnace.png": make_alloy_furnace(),
+        "sprites/blocks/ic2-alloy-furnace.png": make_alloy_furnace(1),
         "sprites/blocks/ic2-solar-panel-2.png": make_tiered(make_solar_panel, 2, (130, 200, 255)),
         "sprites/blocks/ic2-solar-panel-3.png": make_tiered(make_solar_panel, 3, (240, 200, 70)),
         "sprites/blocks/ic2-macerator-2.png": make_tiered(make_macerator, 2, (130, 200, 255)),
         "sprites/blocks/ic2-macerator-3.png": make_tiered(make_macerator, 3, (240, 200, 70)),
-        "sprites/blocks/ic2-re-battery-2.png": make_batbox(),
-        "sprites/blocks/ic2-re-battery-3.png": make_mfsu(),
-        "sprites/blocks/ic2-alloy-furnace-2.png": make_tiered(make_alloy_furnace, 2, (130, 200, 255)),
-        "sprites/blocks/ic2-alloy-furnace-3.png": make_tiered(make_alloy_furnace, 3, (240, 200, 70)),
+        "sprites/blocks/ic2-re-battery-2.png": make_batbox(2),
+        "sprites/blocks/ic2-re-battery-3.png": make_mfsu(4),
+        "sprites/blocks/ic2-alloy-furnace-2.png": make_alloy_furnace(2),
+        "sprites/blocks/ic2-alloy-furnace-3.png": make_alloy_furnace(3),
         "sprites/blocks/ic2-lv-cable.png": make_cable((85, 95, 105), (70, 180, 130), (110, 125, 135)),
         "sprites/blocks/ic2-hv-cable.png": make_cable((80, 75, 85), (220, 85, 55), (135, 110, 125), True),
         "sprites/blocks/ic2-transformer.png": make_transformer(),
         "sprites/blocks/ic2-upgrade-node.png": make_upgrade_node(),
+        "sprites/blocks/ic2-power-node.png": make_power_node(1),
         "sprites/blocks/ic2-insulated-lv-cable.png": make_cable((55, 105, 105), (70, 220, 185), (100, 180, 170)),
         "sprites/blocks/ic2-reinforced-hv-cable.png": make_cable((75, 65, 110), (190, 95, 235), (135, 115, 180), True),
         "sprites/blocks/ic2-low-loss-hv-cable.png": make_cable((55, 95, 125), (80, 205, 245), (105, 165, 205), True),

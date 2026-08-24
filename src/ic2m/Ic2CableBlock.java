@@ -17,6 +17,7 @@ import arc.util.io.Writes;
 /** EU cable node. HV nodes use the same pole-like range on every hop. */
 public class Ic2CableBlock extends Ic2PowerBlock {
     public boolean highVoltage = false;
+    public int powerTier = 0;
     public int nodeRange = 2;
     public float transferRate = 10f;
     public float loss = 0.02f;
@@ -55,8 +56,8 @@ public class Ic2CableBlock extends Ic2PowerBlock {
     @Override
     public void drawPlace(int x, int y, int rotation, boolean valid) {
         super.drawPlace(x, y, rotation, valid);
-        float cx = x * Vars.tilesize + Vars.tilesize / 2f;
-        float cy = y * Vars.tilesize + Vars.tilesize / 2f;
+        float cx = x * Vars.tilesize + Vars.tilesize * size / 2f;
+        float cy = y * Vars.tilesize + Vars.tilesize * size / 2f;
         Draw.color(highVoltage ? Pal.powerLight : Pal.accent);
         Lines.stroke(1.5f);
         Lines.circle(cx, cy, nodeRange * Vars.tilesize);
@@ -82,9 +83,12 @@ public class Ic2CableBlock extends Ic2PowerBlock {
 
         private boolean linkable(Building other) {
             if (other instanceof Ic2CableBlock.Ic2CableBuild cable) {
-                return ((Ic2CableBlock)cable.block).highVoltage == highVoltage;
+                return ((Ic2CableBlock)cable.block).powerTier == ((Ic2CableBlock)block).powerTier;
             }
-            return highVoltage && other instanceof Ic2TransformerBlock.Ic2TransformerBuild;
+            if (other instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild node) {
+                return ((Ic2PowerNodeBlock)node.block).powerTier == ((Ic2CableBlock)block).powerTier;
+            }
+            return other instanceof Ic2TransformerBlock.Ic2TransformerBuild;
         }
 
         private void drawLink(Building other) {
@@ -120,6 +124,7 @@ public class Ic2CableBlock extends Ic2PowerBlock {
                 links.removeValue(other.pos());
                 if (other instanceof Ic2CableBlock.Ic2CableBuild cable) cable.links.removeValue(pos());
             } else {
+                if (links.size >= 2) return true;
                 links.add(other.pos());
                 if (other instanceof Ic2CableBlock.Ic2CableBuild cable && !cable.links.contains(pos())) cable.links.add(pos());
             }
@@ -132,6 +137,7 @@ public class Ic2CableBlock extends Ic2PowerBlock {
             table.add("Range: " + nodeRange + " tiles").left().row();
             table.add("Transfer: " + (int)transferRate + " EU/t | Loss: " + (int)(loss * 100f) + "%").left().row();
             table.add("Manual links: " + links.size + " (tap compatible nodes to toggle)").left();
+            addInputControl(table);
         }
 
         @Override
@@ -165,7 +171,9 @@ public class Ic2CableBlock extends Ic2PowerBlock {
                     if (dx == 0 && dy == 0 || dx * dx + dy * dy > nodeRange * nodeRange) continue;
                     Building other = Vars.world.build(tile.x + dx, tile.y + dy);
                     if (!(other instanceof Ic2PowerBuilding target) || !canConnectEnergy(other) || !useTarget(other)
-                        || !target.canAcceptEnergy() || target.energy >= target.maxEnergy) continue;
+                        || !target.acceptsFrom(this) || target.energy >= target.maxEnergy) continue;
+                    boolean adjacent = Math.max(Math.abs(dx), Math.abs(dy)) <= 1;
+                    if (!adjacent && !links.contains(other.pos())) continue;
 
                     float toSend = EuTransferRules.sourceAmount(energy, target.maxEnergy - target.energy,
                         transferRate, 1f - loss);
@@ -180,14 +188,13 @@ public class Ic2CableBlock extends Ic2PowerBlock {
 
         @Override
         protected boolean canConnectEnergy(Building other) {
-            if (highVoltage) {
-                return other instanceof Ic2CableBlock.Ic2CableBuild cable && ((Ic2CableBlock)cable.block).highVoltage
-                    || other instanceof Ic2TransformerBlock.Ic2TransformerBuild transformer
-                        && transformer.mode == Ic2TransformerBlock.MODE_STEP_DOWN;
+            if (other instanceof Ic2CableBlock.Ic2CableBuild cable) {
+                return ((Ic2CableBlock)cable.block).powerTier == ((Ic2CableBlock)block).powerTier;
             }
-            return !(other instanceof Ic2CableBlock.Ic2CableBuild cable && ((Ic2CableBlock)cable.block).highVoltage)
-                && !(other instanceof Ic2TransformerBlock.Ic2TransformerBuild transformer
-                    && transformer.mode == Ic2TransformerBlock.MODE_STEP_DOWN);
+            if (other instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild node) {
+                return ((Ic2PowerNodeBlock)node.block).powerTier == ((Ic2CableBlock)block).powerTier;
+            }
+            return super.canConnectEnergy(other);
         }
 
         @Override

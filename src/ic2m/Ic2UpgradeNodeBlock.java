@@ -214,15 +214,16 @@ public class Ic2UpgradeNodeBlock extends Ic2PowerBlock {
                             r.add(new Image(s.item.uiIcon)).size(20).padRight(4);
                             r.add(s.item.localizedName).left().growX();
                             r.add((int) have + "/" + s.amount).right();
-                        }).fillX().row();
-                        p.add(new Bar("", Pal.accent, () -> frac)).fillX().height(4f).pad(0f, 0f, 6f, 0f).row();
+                        }).fillX().padBottom(4f).row();
+                        p.add(new Bar("", Pal.accent, () -> frac)).fillX().height(4f).padTop(2f).padBottom(8f).row();
                     }
                 }
 
                 float eFrac = Math.min(1f, energy / cost(tier));
-                p.add("EU charge: " + formatEU(energy) + "/" + formatEU(cost(tier))).left().row();
+                p.add("EU charge: " + formatEU(energy) + "/" + formatEU(cost(tier))).left().padTop(6f).padBottom(4f).row();
                 p.add(new Bar("", Pal.powerBar, () -> eFrac)).fillX().height(4f).row();
             }).fillX();
+            addInputControl(table);
         }
     }
 }

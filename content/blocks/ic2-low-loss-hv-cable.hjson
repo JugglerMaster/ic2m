@@ -7,10 +7,11 @@
     size: 1,
     health: 120,
     highVoltage: true,
+    powerTier: 1,
     nodeRange: 16,
-    transferRate: 15,
+    transferRate: 128,
     loss: 0.005,
-    cableCapacity: 150,
+    cableCapacity: 128,
     requirements: [
         copper/8,
         lead/4,

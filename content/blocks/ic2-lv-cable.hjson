@@ -7,10 +7,11 @@
     size: 1,
     health: 60,
     highVoltage: false,
+    powerTier: 0,
     nodeRange: 2,
-    transferRate: 10,
+    transferRate: 32,
     loss: 0.02,
-    cableCapacity: 100,
+    cableCapacity: 32,
     requirements: [
         copper/3,
         coal/1

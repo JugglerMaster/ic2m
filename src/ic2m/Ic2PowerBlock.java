@@ -1,6 +1,8 @@
 package ic2m;
 
 import arc.func.Func;
+import arc.graphics.g2d.Draw;
+import arc.graphics.g2d.Lines;
 import mindustry.ui.Bar;
 import mindustry.Vars;
 import mindustry.gen.Building;
@@ -46,11 +48,18 @@ public class Ic2PowerBlock extends Block {
         return 2;
     }
 
+    /** Placement preview: show the block ghost plus a faint circle covering the
+     *  adjacent tiles it exchanges EU with (cables draw their own range circle). */
     @Override
     public void drawPlace(int x, int y, int rotation, boolean valid) {
-        super.drawPlace(x, y, rotation, valid);
-        float cx = x * Vars.tilesize + Vars.tilesize / 2f;
-        float cy = y * Vars.tilesize + Vars.tilesize / 2f;
-        Drawf.dashSquare(Pal.accent, cx, cy, 5f * Vars.tilesize);
+        float cx = x * Vars.tilesize + Vars.tilesize * size / 2f;
+        float cy = y * Vars.tilesize + Vars.tilesize * size / 2f;
+        Draw.rect(region, cx, cy);
+        if (!(this instanceof Ic2CableBlock)) {
+            Draw.color(Pal.accent);
+            Lines.stroke(1f);
+            Lines.circle(cx, cy, 1.5f * Vars.tilesize);
+            Draw.reset();
+        }
     }
 }

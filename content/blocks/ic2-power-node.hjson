@@ -1,0 +1,16 @@
+{
+    type: "ic2m.Ic2PowerNodeBlock",
+    name: "ic2-power-node",
+    description: "IC2 power node. Bridges the cable network to IC2 buildings: connects to same-tier cables within 3x the cable range and powers/collects from adjacent machines. Cables no longer touch machines directly.",
+    category: "power",
+    buildVisibility: "shown",
+    size: 1,
+    health: 80,
+    powerTier: 0,
+    nodeRange: 6,
+    transferRate: 32,
+    requirements: [
+        copper/4,
+        lead/2
+    ]
+}

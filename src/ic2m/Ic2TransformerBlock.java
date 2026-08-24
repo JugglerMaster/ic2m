@@ -46,12 +46,12 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
                     if (dx == 0 && dy == 0) continue;
                     Building other = Vars.world.build(tile.x + dx, tile.y + dy);
                     if (!(other instanceof Ic2PowerBuilding target) || !canConnectEnergy(other)
-                        || !target.canAcceptEnergy() || target.energy >= target.maxEnergy) continue;
+                        || !target.acceptsFrom(this) || target.energy >= target.maxEnergy) continue;
                     if (other instanceof Ic2CableBlock.Ic2CableBuild cable
                         && cable.links.size > 0 && !cable.hasLink(this)) continue;
 
                     float available = EuTransferRules.sourceAmount(energy, target.maxEnergy - target.energy,
-                        10f, CONVERSION_EFFICIENCY);
+                        powerTransferRate(), CONVERSION_EFFICIENCY);
                     if (available <= 0f) continue;
                     float remainder = target.acceptEnergy(EuTransferRules.targetAmount(available, CONVERSION_EFFICIENCY));
                     energy -= available - remainder / CONVERSION_EFFICIENCY;
@@ -62,11 +62,10 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
 
         @Override
         protected boolean canConnectEnergy(Building other) {
-            if (mode == MODE_STEP_UP) {
-                return other instanceof Ic2CableBlock.Ic2CableBuild cable && ((Ic2CableBlock)cable.block).highVoltage;
-            }
-            return !(other instanceof Ic2CableBlock.Ic2CableBuild cable && ((Ic2CableBlock)cable.block).highVoltage)
-                && !(other instanceof Ic2TransformerBlock.Ic2TransformerBuild);
+            if (!(other instanceof Ic2PowerBuilding)) return false;
+            // Transformer bridges cable tiers; connect to anything except another transformer.
+            if (other instanceof Ic2TransformerBlock.Ic2TransformerBuild) return false;
+            return true;
         }
 
         private int connectedNodes() {
@@ -95,6 +94,7 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
             table.add("Connected HV nodes: " + connectedNodes());
             table.row();
             table.add("EU buffer: " + (int)energy + "/" + (int)maxEnergy);
+            addInputControl(table);
         }
 
         @Override

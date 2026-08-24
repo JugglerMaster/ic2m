@@ -7,10 +7,11 @@
     size: 1,
     health: 180,
     highVoltage: true,
+    powerTier: 2,
     nodeRange: 24,
-    transferRate: 40,
+    transferRate: 512,
     loss: 0,
-    cableCapacity: 300,
+    cableCapacity: 512,
     requirements: [
         copper/10,
         titanium/10,
