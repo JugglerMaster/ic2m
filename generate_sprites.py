@@ -289,6 +289,86 @@ def make_transformer():
     return img
 
 
+def make_upgrade_node():
+    """Upgrade node: white machine housing with a green up arrow."""
+    img = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    # White housing.
+    gradient_rect(draw, (3, 3, 28, 28), (228, 231, 235), (188, 193, 201))
+    draw_border(draw, (3, 3, 28, 28), (208, 212, 219))
+    # Dark inset panel.
+    draw.rectangle([7, 7, 24, 24], fill=(58, 62, 70))
+    draw.rectangle([8, 8, 23, 23], fill=(38, 42, 50))
+    # Green up arrow.
+    arrow = [(16, 10), (22, 19), (18, 19), (18, 23), (14, 23), (14, 19), (10, 19)]
+    draw.polygon(arrow, fill=(90, 220, 120))
+    draw.line([(10, 24), (22, 24)], fill=(90, 220, 120, 210), width=2)
+    # Corner bolts.
+    for (x, y) in [(5, 5), (26, 5), (5, 26), (26, 26)]:
+        draw.ellipse([x - 1, y - 1, x + 1, y + 1], fill=(160, 165, 175))
+    return img
+
+
+def make_batbox():
+    """BatBox (tier 2 RE storage): wooden crate with a red energy cell."""
+    w = 2 * SIZE
+    img = Image.new('RGBA', (w, w), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    # Wooden body.
+    gradient_rect(draw, (3, 3, w - 4, w - 4), (122, 86, 46), (80, 55, 30))
+    draw_border(draw, (3, 3, w - 4, w - 4), (150, 110, 60))
+    # Plank seams.
+    for i in (1, 2):
+        draw.line([(i * SIZE, 4), (i * SIZE, w - 5)], fill=(60, 40, 20, 120), width=1)
+        draw.line([(4, i * SIZE), (w - 5, i * SIZE)], fill=(60, 40, 20, 120), width=1)
+    # Metal corner brackets.
+    for (bx, by) in [(4, 4), (w - 14, 4), (4, w - 14), (w - 14, w - 14)]:
+        draw.rectangle([bx, by, bx + 9, by + 9], fill=(92, 97, 107))
+        draw.rectangle([bx + 1, by + 1, bx + 8, by + 8], fill=(122, 127, 137))
+    # Central red energy cell.
+    ccx, ccy = w // 2, w // 2
+    draw.rectangle([ccx - 12, ccy - 18, ccx + 12, ccy + 18], fill=(150, 40, 35))
+    draw.rectangle([ccx - 10, ccy - 16, ccx + 10, ccy + 16], outline=(205, 75, 62), width=1)
+    for y in (ccy - 8, ccy, ccy + 8):
+        draw.line([(ccx - 9, y), (ccx + 9, y)], fill=(120, 30, 28), width=1)
+    draw.line([(ccx - 4, ccy - 12), (ccx + 4, ccy - 12)], fill=(255, 255, 255, 200), width=1)
+    draw.line([(ccx, ccy - 16), (ccx, ccy - 8)], fill=(255, 255, 255, 200), width=1)
+    draw.line([(ccx - 4, ccy + 12), (ccx + 4, ccy + 12)], fill=(255, 255, 255, 200), width=1)
+    draw.ellipse([ccx - 3, ccy + 20, ccx + 3, ccy + 26], fill=(80, 220, 80))
+    return img
+
+
+def make_mfsu():
+    """MFSu (tier 3 RE storage): advanced metallic unit with a glowing core."""
+    w = 3 * SIZE
+    img = Image.new('RGBA', (w, w), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    # Metallic body.
+    gradient_rect(draw, (4, 4, w - 5, w - 5), (92, 102, 117), (50, 58, 70))
+    draw_border(draw, (4, 4, w - 5, w - 5), (132, 142, 157))
+    for i in (1, 2):
+        draw.line([(i * SIZE, 5), (i * SIZE, w - 6)], fill=(30, 35, 45, 120), width=1)
+        draw.line([(5, i * SIZE), (w - 6, i * SIZE)], fill=(30, 35, 45, 120), width=1)
+    # Top antenna.
+    ccx, ccy = w // 2, w // 2
+    draw.rectangle([ccx - 2, 8, ccx + 2, 4 + SIZE // 2], fill=(150, 150, 160))
+    draw.ellipse([ccx - 4, 4, ccx + 4, 12], fill=(220, 80, 60))
+    # Glowing core.
+    r = SIZE
+    draw.ellipse([ccx - r, ccy - r, ccx + r, ccy + r], fill=(40, 70, 90))
+    draw.ellipse([ccx - r, ccy - r, ccx + r, ccy + r], outline=(120, 200, 230), width=2)
+    draw.ellipse([ccx - r + 8, ccy - r + 8, ccx + r - 8, ccy + r - 8], fill=(60, 150, 200))
+    draw.ellipse([ccx - r + 14, ccy - r + 14, ccx + r - 14, ccy + r - 14], fill=(120, 220, 255))
+    draw.line([(ccx - r, ccy), (ccx + r, ccy)], fill=(200, 240, 255, 180), width=2)
+    draw.line([(ccx, ccy - r), (ccx, ccy + r)], fill=(200, 240, 255, 180), width=2)
+    # Side energy readouts.
+    for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        bx, by = ccx + dx * SIZE, ccy + dy * SIZE
+        draw.rectangle([bx - 8, by - 6, bx + 8, by + 6], fill=(20, 30, 40))
+        draw.rectangle([bx - 7, by - 5, bx + 7, by + 5], fill=(60, 200, 120))
+    return img
+
+
 def make_tiered(base_fn, n, frame_color):
     """Compose an n x n grid of a base 32x32 machine sprite into one larger,
     properly-sized sprite for tier-2/3 (size n) blocks, with a tier-colored
@@ -396,13 +476,14 @@ if __name__ == "__main__":
         "sprites/blocks/ic2-solar-panel-3.png": make_tiered(make_solar_panel, 3, (240, 200, 70)),
         "sprites/blocks/ic2-macerator-2.png": make_tiered(make_macerator, 2, (130, 200, 255)),
         "sprites/blocks/ic2-macerator-3.png": make_tiered(make_macerator, 3, (240, 200, 70)),
-        "sprites/blocks/ic2-re-battery-2.png": make_tiered(make_battery, 2, (130, 200, 255)),
-        "sprites/blocks/ic2-re-battery-3.png": make_tiered(make_battery, 3, (240, 200, 70)),
+        "sprites/blocks/ic2-re-battery-2.png": make_batbox(),
+        "sprites/blocks/ic2-re-battery-3.png": make_mfsu(),
         "sprites/blocks/ic2-alloy-furnace-2.png": make_tiered(make_alloy_furnace, 2, (130, 200, 255)),
         "sprites/blocks/ic2-alloy-furnace-3.png": make_tiered(make_alloy_furnace, 3, (240, 200, 70)),
         "sprites/blocks/ic2-lv-cable.png": make_cable((85, 95, 105), (70, 180, 130), (110, 125, 135)),
         "sprites/blocks/ic2-hv-cable.png": make_cable((80, 75, 85), (220, 85, 55), (135, 110, 125), True),
         "sprites/blocks/ic2-transformer.png": make_transformer(),
+        "sprites/blocks/ic2-upgrade-node.png": make_upgrade_node(),
         "sprites/blocks/ic2-insulated-lv-cable.png": make_cable((55, 105, 105), (70, 220, 185), (100, 180, 170)),
         "sprites/blocks/ic2-reinforced-hv-cable.png": make_cable((75, 65, 110), (190, 95, 235), (135, 115, 180), True),
         "sprites/blocks/ic2-low-loss-hv-cable.png": make_cable((55, 95, 125), (80, 205, 245), (105, 165, 205), True),
