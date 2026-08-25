@@ -107,7 +107,7 @@ public class Ic2PowerBuilding extends Building {
     }
 
     public void cycleOutput() {
-        outputRotation = outputRotation >= 3 ? -1 : outputRotation + 1;
+        outputRotation = (outputRotation + 1) % 4;
     }
 
     protected String outputDirName(int r) {
@@ -126,6 +126,15 @@ public class Ic2PowerBuilding extends Building {
     /** Whether this block may push EU out to the given neighbour; batteries restrict to one side. */
     protected boolean canOutputTo(Building other) {
         return true;
+    }
+
+    /** Default output side for this block type; -1 = none (omnidirectional). Batteries/transformers override to a side. */
+    protected int defaultOutputRotation() { return -1; }
+
+    @Override
+    public void created() {
+        super.created();
+        outputRotation = defaultOutputRotation();
     }
 
     /** Pushes `amount` EU directly into neighbouring acceptors without storing it (used by solar panels). */

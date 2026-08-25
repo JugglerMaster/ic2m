@@ -46,7 +46,7 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
                     if (dx == 0 && dy == 0) continue;
                     Building other = Vars.world.build(tile.x + dx, tile.y + dy);
                     if (!(other instanceof Ic2PowerBuilding target) || !canConnectEnergy(other)
-                        || !target.acceptsFrom(this) || target.energy >= target.maxEnergy) continue;
+                        || !target.acceptsFrom(this) || !canOutputTo(other) || target.energy >= target.maxEnergy) continue;
                     if (other instanceof Ic2CableBlock.Ic2CableBuild cable
                         && cable.links.size > 0 && !cable.hasLink(this)) continue;
 
@@ -67,6 +67,28 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
             if (other instanceof Ic2TransformerBlock.Ic2TransformerBuild) return false;
             return true;
         }
+
+        @Override
+        public boolean acceptsFrom(Building source) {
+            if (!canAcceptEnergy()) return false;
+            if (outputRotation >= 0) {
+                int dx = source.tile.x - tile.x;
+                int dy = source.tile.y - tile.y;
+                if (D4[outputRotation][0] == dx && D4[outputRotation][1] == dy) return false;
+            }
+            return true;
+        }
+
+        @Override
+        protected boolean canOutputTo(Building other) {
+            if (outputRotation < 0) return true;
+            int dx = other.tile.x - tile.x;
+            int dy = other.tile.y - tile.y;
+            return D4[outputRotation][0] == dx && D4[outputRotation][1] == dy;
+        }
+
+        @Override
+        protected int defaultOutputRotation() { return 1; }
 
         private int connectedNodes() {
             int count = 0;
@@ -94,6 +116,8 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
             table.add("Connected HV nodes: " + connectedNodes());
             table.row();
             table.add("EU buffer: " + (int)energy + "/" + (int)maxEnergy);
+            table.row();
+            addOutputControl(table);
         }
 
         @Override
@@ -107,7 +131,7 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
         }
 
         @Override
-        public byte version() { return 2; }
+        public byte version() { return 3; }
 
         @Override
         protected boolean readsOutputState(byte revision) { return false; }
@@ -119,12 +143,14 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
         public void write(Writes write) {
             super.write(write);
             write.i(mode);
+            write.i(outputRotation);
         }
 
         @Override
         public void read(Reads read, byte revision) {
             super.read(read, revision);
             if (revision >= 1) mode = read.i();
+            if (revision >= 3) outputRotation = read.i();
         }
     }
 }

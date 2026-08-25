@@ -43,12 +43,10 @@ public class BatteryBlock extends Ic2PowerBlock {
         @Override
         public boolean acceptsFrom(Building source) {
             if (!canAcceptEnergy()) return false;
-            if (outputRotation >= 0) {
-                int dx = source.tile.x - tile.x;
-                int dy = source.tile.y - tile.y;
-                if (D4[outputRotation][0] == dx && D4[outputRotation][1] == dy) return false;
-            }
-            return true;
+            if (outputRotation < 0) return true;
+            int dx = source.tile.x - tile.x;
+            int dy = source.tile.y - tile.y;
+            return D4[outputRotation][0] == dx && D4[outputRotation][1] == dy;
         }
 
         @Override
@@ -58,6 +56,9 @@ public class BatteryBlock extends Ic2PowerBlock {
             int dy = other.tile.y - tile.y;
             return D4[outputRotation][0] == dx && D4[outputRotation][1] == dy;
         }
+
+        @Override
+        protected int defaultOutputRotation() { return 1; }
 
         @Override
         public void buildConfiguration(Table table) {
