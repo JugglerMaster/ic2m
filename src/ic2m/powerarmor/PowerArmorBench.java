@@ -36,7 +36,7 @@ public class PowerArmorBench extends Ic2PowerBlock {
         update = false;
         configurable = true;
         saveConfig = true;
-        category = Category.power;
+        category = Category.effect;
         buildVisibility = BuildVisibility.shown;
         basePowerCapacity = 5000f;
         requirements = ItemStack.with(
