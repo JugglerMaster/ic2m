@@ -10,17 +10,23 @@ import mindustry.Vars;
 import mindustry.content.Items;
 import mindustry.gen.Building;
 import mindustry.graphics.Pal;
+import mindustry.type.Item;
 import mindustry.type.ItemStack;
 import mindustry.world.Block;
 import mindustry.type.Category;
+import ic2m.Ic2PowerBlock;
+import ic2m.Ic2PowerBuilding;
 import ic2m.Ic2mMod;
 
 /** Base-upgrade block. Paying the one-time unlock cost (done in the bench UI, per
- *  map) sets the player's respawn unit to the Power Armor Suit. The chosen loadout
- *  (weapon / armor / support) is stored on the block so it survives saves. */
-public class PowerArmorBench extends Block {
-    /** One-time cost to unlock all upgrade options for this map. */
+ *  map) sets the player's respawn unit to the Power Armor Suit. Each loadout option
+ *  (weapon / armor / support / mobility) also costs IC2 EU to select. The bench draws
+ *  that EU from the LV power network, so it must be wired to an LV cable. */
+public class PowerArmorBench extends Ic2PowerBlock {
+    /** One-time item cost to unlock all upgrade options for this map. */
     public ItemStack[] unlockCost = ItemStack.with(Items.copper, 200, Items.graphite, 100);
+    /** EU drained from the grid each time a loadout option is selected. */
+    public float optionPowerCost = 1000f;
 
     public PowerArmorBench(String name) {
         super(name);
@@ -30,21 +36,55 @@ public class PowerArmorBench extends Block {
         configurable = true;
         saveConfig = true;
         category = Category.units;
-        requirements = ItemStack.with(Items.copper, 100, Items.lead, 50);
+        basePowerCapacity = 5000f;
+        requirements = ItemStack.with(
+            ingot("copper-ingot", Items.copper), 1000,
+            ingot("lead-ingot", Items.lead), 500,
+            ingot("titanium-ingot", Items.titanium), 250
+        );
         buildType = () -> new PowerArmorBenchBuild();
     }
 
-    public class PowerArmorBenchBuild extends Building {
+    /** Resolve a mod ingot item by name suffix; fall back to a vanilla item if missing. */
+    private static Item ingot(String suffix, Item fallback) {
+        Item found = Vars.content.items().find(i -> i.name.endsWith("-" + suffix));
+        return found == null ? fallback : found;
+    }
+
+    public class PowerArmorBenchBuild extends Ic2PowerBuilding {
         public boolean unlocked = false;
         public boolean enabled = true;
         public String weaponId = "rifle";
         public String armorId = "balanced";
         public String supportId = "none";
         public String mobilityId = "ground";
+        /** Transient message shown at the top of the config panel (e.g. low-EU warning). */
+        public String statusMsg = "";
+
+        @Override
+        public void created() {
+            super.created();
+            maxEnergy = basePowerCapacity;
+        }
+
+        @Override
+        protected void distributePower() {
+            // The bench only consumes EU; it never pushes it back onto the grid.
+        }
+
+        @Override
+        public int voltageTier() {
+            return 1; // MV: matches the 2x2 footprint and the bench's advanced role.
+        }
 
         @Override
         public void buildConfiguration(Table table) {
             table.add("[accent]Power Armor Bench[]").row();
+            if (!statusMsg.isEmpty()) {
+                table.add(statusMsg).row();
+                statusMsg = "";
+            }
+            table.add("[lightgray]Stored EU: " + (int) energy + " / " + (int) maxEnergy + "[]").row();
 
             if (!unlocked) {
                 table.add("Unlock to respawn in the Power Armor Suit.").row();
@@ -69,17 +109,29 @@ public class PowerArmorBench extends Block {
             }).growX().row();
 
             category(table, "Weapon", SuitOptions.WEAPONS, weaponId, null,
-                id -> { weaponId = id; afterSelect(table); });
+                id -> selectOption(table, () -> weaponId = id));
             category(table, "Armor", SuitOptions.ARMORS, armorId, null,
-                id -> { armorId = id; afterSelect(table); });
+                id -> selectOption(table, () -> armorId = id));
             category(table, "Support", SuitOptions.SUPPORTS, supportId, null,
-                id -> { supportId = id; afterSelect(table); });
+                id -> selectOption(table, () -> supportId = id));
             category(table, "Mobility", SuitOptions.MOBILITY, mobilityId,
                 id -> id.equals("jetpack") && !Ic2mMod.jetpackUnlocked(),
-                id -> { mobilityId = id; afterSelect(table); });
+                id -> selectOption(table, () -> mobilityId = id));
 
             if (supportId.equals("repair")) {
                 table.add("[scarlet]Repair consumes Nanite Gel each respawn.[]").row();
+            }
+        }
+
+        /** Pay the EU cost for a loadout option. Refreshes with a warning if the grid has no charge. */
+        private void selectOption(Table table, Runnable apply) {
+            if (energy >= optionPowerCost) {
+                energy -= optionPowerCost;
+                apply.run();
+                afterSelect(table);
+            } else {
+                statusMsg = "[scarlet]Needs " + (int) optionPowerCost + " EU — connect an MV cable.[]";
+                refresh(table);
             }
         }
 

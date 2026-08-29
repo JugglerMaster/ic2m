@@ -7,7 +7,7 @@
     size: 1,
     health: 100,
     highVoltage: true,
-    powerTier: 1,
+    powerTier: 2,
     nodeRange: 16,
     transferRate: 128,
     loss: 0.02,

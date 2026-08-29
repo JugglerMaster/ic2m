@@ -1,0 +1,20 @@
+{
+    type: "ic2m.Ic2CableBlock",
+    name: "ic2-mv-cable",
+    description: "Medium-voltage EU cable. Transfers EU between adjacent IC2 machines and cable segments within 8 tiles. Connects only to MV-tier blocks (LV/HV cables are isolated from it).",
+    category: "power",
+    buildVisibility: "shown",
+    size: 1,
+    health: 80,
+    highVoltage: false,
+    powerTier: 1,
+    nodeRange: 8,
+    transferRate: 64,
+    loss: 0.01,
+    cableCapacity: 64,
+    requirements: [
+        copper/4,
+        lead/2,
+        graphite/1
+    ]
+}

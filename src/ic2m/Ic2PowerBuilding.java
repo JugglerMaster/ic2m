@@ -41,6 +41,10 @@ public class Ic2PowerBuilding extends Building {
     public float getMaxEnergy() { return maxEnergy; }
     public float getEnergyPercentage() { return maxEnergy > 0 ? energy / maxEnergy : 0; }
 
+    /** Operating voltage tier for connection rules. Machines derive it from their merge tier
+     *  (0 = LV / T1, 1 = MV / T2, 2 = HV / T3); cables and nodes override to report powerTier. */
+    public int voltageTier() { return upgradeTier; }
+
     /** Items the upgrade node must be fed to merge this block to the given user tier (2 or 3). */
     public ItemStack[] upgradeRequirements(int tier) {
         return new ItemStack[0];
@@ -239,23 +243,14 @@ public class Ic2PowerBuilding extends Building {
     }
 
     protected boolean canConnectEnergy(Building other) {
-        if (!(other instanceof Ic2PowerBuilding)) return false;
-        Ic2PowerBuilding o = (Ic2PowerBuilding) other;
-        boolean thisCable = this instanceof Ic2CableBlock.Ic2CableBuild;
-        boolean otherCable = o instanceof Ic2CableBlock.Ic2CableBuild;
-        if (thisCable && !otherCable) {
-            if (o instanceof Ic2TransformerBlock.Ic2TransformerBuild) return true;
-            if (o instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild) return true;
-            if (o.isGenerator()) return true;
-            return false;
-        }
-        if (!thisCable && otherCable) {
-            if (this instanceof Ic2TransformerBlock.Ic2TransformerBuild) return true;
-            if (this instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild) return true;
-            if (this.isGenerator()) return true;
-            return false;
-        }
-        return true;
+        if (!(other instanceof Ic2PowerBuilding o)) return false;
+        // Transformers bridge voltage tiers; two transformers never link to each other.
+        boolean thisXf = this instanceof Ic2TransformerBlock.Ic2TransformerBuild;
+        boolean otherXf = o instanceof Ic2TransformerBlock.Ic2TransformerBuild;
+        if (thisXf && otherXf) return false;
+        if (thisXf || otherXf) return true;
+        // Otherwise only same-voltage blocks connect (LV<->LV, MV<->MV, HV<->HV).
+        return voltageTier() == o.voltageTier();
     }
 
     @Override
@@ -296,7 +291,7 @@ public class Ic2PowerBuilding extends Building {
         if (this instanceof Ic2CableBlock.Ic2CableBuild cable) {
             Ic2CableBlock cableBlock = (Ic2CableBlock) cable.block;
             float r = cableBlock.nodeRange * Vars.tilesize;
-            Draw.color(cableBlock.highVoltage ? Pal.powerLight : Pal.accent);
+            Draw.color(cableBlock.linkColor());
             Lines.stroke(1.5f);
             Lines.circle(x, y, r);
             Draw.reset();
@@ -330,8 +325,9 @@ public class Ic2PowerBuilding extends Building {
     }
 
     protected void drawEnergyBar() {
-        boolean hv = this instanceof Ic2CableBlock.Ic2CableBuild cable && ((Ic2CableBlock) cable.block).highVoltage;
-        drawBar(x, y, getEnergyPercentage(), hv ? Pal.powerLight : Pal.powerBar);
+        Color c = this instanceof Ic2CableBlock.Ic2CableBuild cable
+            ? ((Ic2CableBlock) cable.block).linkColor() : Pal.powerBar;
+        drawBar(x, y, getEnergyPercentage(), c);
     }
 
     protected void drawProgressBar() {

@@ -196,32 +196,55 @@ def make_battery():
     draw.line([(19, 15), (23, 15)], fill=(255, 255, 255, 200), width=1)
     return img
 
-def make_macerator():
-    """Macerator with grinding wheels."""
-    img = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
+def draw_rotor(draw, cx, cy, r, accent):
+    """Draw a single grinding rotor: dark ring, hub, spokes and accent teeth."""
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(70, 70, 80))
+    draw.ellipse([cx - r + 2, cy - r + 2, cx + r - 2, cy + r - 2], fill=(110, 110, 120))
+    for angle in range(0, 360, 60):
+        rad = math.radians(angle)
+        x0 = cx + int((r - 2) * math.cos(rad))
+        y0 = cy + int((r - 2) * math.sin(rad))
+        x1 = cx + int((r + 1) * math.cos(rad))
+        y1 = cy + int((r + 1) * math.sin(rad))
+        draw.line([(x0, y0), (x1, y1)], fill=(150, 150, 162), width=1)
+    for angle in range(0, 360, 30):
+        rad = math.radians(angle)
+        tx = cx + int(r * math.cos(rad))
+        ty = cy + int(r * math.sin(rad))
+        draw.point((tx, ty), fill=accent)
+    draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(190, 190, 205))
+
+def make_macerator(tier=1):
+    """Macerator. Higher tiers are a larger machine with more grinding rotors
+    and richer tier accents (MV blue -> HV gold), instead of a tiled copy."""
+    size = (1 << (tier - 1)) * SIZE
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
+    accent = [(150, 150, 160), (130, 200, 255), (240, 200, 70)][min(tier, 3) - 1]
+    b = 3
     # Body
-    gradient_rect(draw, (3, 3, 28, 28), (140, 140, 150), (90, 90, 100))
-    draw_border(draw, (3, 3, 28, 28), (160, 160, 170))
-    # Grinding wheels (two circles)
-    cx1, cy1 = 11, 16
-    cx2, cy2 = 21, 16
-    for cx, cy in [(cx1, cy1), (cx2, cy2)]:
-        draw.ellipse([cx-5, cy-5, cx+5, cy+5], fill=(100, 100, 110))
-        draw.ellipse([cx-4, cy-4, cx+4, cy+4], fill=(120, 120, 130))
-        # Teeth pattern
-        for angle in range(0, 360, 45):
-            rad = math.radians(angle)
-            tx = cx + int(3 * math.cos(rad))
-            ty = cy + int(3 * math.sin(rad))
-            draw.point((tx, ty), fill=(180, 180, 190))
-    # Input hopper
-    draw.rectangle([10, 3, 21, 7], fill=(80, 80, 90))
-    draw.rectangle([11, 4, 20, 6], fill=(60, 60, 70))
-    # Output
-    draw.rectangle([12, 26, 19, 28], fill=(80, 80, 90))
-    # Gear decoration
-    draw.ellipse([13, 12, 19, 18], outline=(160, 160, 170), width=1)
+    gradient_rect(draw, (b, b, size - b, size - b), (140, 140, 150), (90, 90, 100))
+    draw_border(draw, (b, b, size - b, size - b), (160, 160, 170))
+    # Tier accent frame
+    draw.rectangle([1, 1, size - 2, size - 1], outline=accent, width=2)
+    # Input hopper (top) and output (bottom)
+    hw = size // 3
+    hx0 = (size - hw) // 2
+    draw.rectangle([hx0, 1, hx0 + hw, b + 4], fill=(80, 80, 90))
+    draw.rectangle([hx0 + hw // 4, 2, hx0 + 3 * hw // 4, b + 3], fill=(60, 60, 70))
+    draw.rectangle([hx0, size - b - 4, hx0 + hw, size - 1], fill=(80, 80, 90))
+    draw.rectangle([hx0 + hw // 4, size - b - 3, hx0 + 3 * hw // 4, size - 2], fill=(60, 60, 70))
+    # Grinding rotors: more of them as the tier grows.
+    cols, rows = {1: (2, 1), 2: (2, 2), 3: (3, 2)}[min(tier, 3)]
+    x0, y0, x1, y1 = b + 6, b + 8, size - b - 6, size - b - 8
+    cx_step = (x1 - x0) / cols
+    cy_step = (y1 - y0) / rows
+    for r in range(rows):
+        for c in range(cols):
+            cx = int(x0 + cx_step * (c + 0.5))
+            cy = int(y0 + cy_step * (r + 0.5))
+            rr = max(3, int(min(cx_step, cy_step) * 0.38))
+            draw_rotor(draw, cx, cy, rr, accent)
     return img
 
 def make_alloy_furnace(tier=1):
@@ -378,20 +401,22 @@ def make_batbox(bs=2):
 
 
 def make_mfsu(bs=4):
-    """MFSu (tier 3 RE storage): advanced metallic unit with a glowing core."""
+    """MFSu (tier 3 RE storage): advanced metallic unit with a glowing core and corner energy cells."""
     w = bs * SIZE
     img = Image.new('RGBA', (w, w), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
+    m = 4
     # Metallic body.
-    gradient_rect(draw, (4, 4, w - 5, w - 5), (92, 102, 117), (50, 58, 70))
-    draw_border(draw, (4, 4, w - 5, w - 5), (132, 142, 157))
-    for i in (1, 2):
-        draw.line([(i * SIZE, 5), (i * SIZE, w - 6)], fill=(30, 35, 45, 120), width=1)
-        draw.line([(5, i * SIZE), (w - 6, i * SIZE)], fill=(30, 35, 45, 120), width=1)
+    gradient_rect(draw, (m, m, w - m - 1, w - m - 1), (92, 102, 117), (50, 58, 70))
+    draw_border(draw, (m, m, w - m - 1, w - m - 1), (132, 142, 157))
+    # Tile seams (4x4).
+    for i in (1, 2, 3):
+        draw.line([(i * SIZE, m + 1), (i * SIZE, w - m - 1)], fill=(30, 35, 45, 120), width=1)
+        draw.line([(m + 1, i * SIZE), (w - m - 1, i * SIZE)], fill=(30, 35, 45, 120), width=1)
     # Top antenna.
     ccx, ccy = w // 2, w // 2
-    draw.rectangle([ccx - 2, 8, ccx + 2, 4 + SIZE // 2], fill=(150, 150, 160))
-    draw.ellipse([ccx - 4, 4, ccx + 4, 12], fill=(220, 80, 60))
+    draw.rectangle([ccx - 2, m + 4, ccx + 2, m + SIZE // 2], fill=(150, 150, 160))
+    draw.ellipse([ccx - 4, m, ccx + 4, m + 8], fill=(220, 80, 60))
     # Glowing core.
     r = w // 3
     draw.ellipse([ccx - r, ccy - r, ccx + r, ccy + r], fill=(40, 70, 90))
@@ -400,11 +425,13 @@ def make_mfsu(bs=4):
     draw.ellipse([ccx - r + 14, ccy - r + 14, ccx + r - 14, ccy + r - 14], fill=(120, 220, 255))
     draw.line([(ccx - r, ccy), (ccx + r, ccy)], fill=(200, 240, 255, 180), width=2)
     draw.line([(ccx, ccy - r), (ccx, ccy + r)], fill=(200, 240, 255, 180), width=2)
-    # Side energy readouts.
-    for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        bx, by = ccx + dx * SIZE, ccy + dy * SIZE
-        draw.rectangle([bx - 8, by - 6, bx + 8, by + 6], fill=(20, 30, 40))
-        draw.rectangle([bx - 7, by - 5, bx + 7, by + 5], fill=(60, 200, 120))
+    # Corner energy cells in every corner so the whole unit reads complete (no clipped bottom-right).
+    for (cx, cy) in [(m + 15, m + 15), (w - m - 15, m + 15),
+                     (m + 15, w - m - 15), (w - m - 15, w - m - 15)]:
+        draw.rectangle([cx - 10, cy - 10, cx + 10, cy + 10], fill=(20, 30, 40))
+        draw.rectangle([cx - 9, cy - 9, cx + 9, cy + 9], outline=(120, 200, 230), width=1)
+        draw.rectangle([cx - 6, cy - 6, cx + 6, cy + 6], fill=(60, 200, 120))
+        draw.point((cx, cy), fill=(200, 255, 220))
     return img
 
 
@@ -510,17 +537,18 @@ if __name__ == "__main__":
         "sprites/items/thorium-dust.png": make_dust((80, 140, 80), "thorium"),
         "sprites/blocks/ic2-solar-panel.png": make_solar_panel(),
         "sprites/blocks/ic2-battery.png": make_battery(),
-        "sprites/blocks/ic2-macerator.png": make_macerator(),
+        "sprites/blocks/ic2-macerator.png": make_macerator(1),
         "sprites/blocks/ic2-alloy-furnace.png": make_alloy_furnace(1),
         "sprites/blocks/ic2-solar-panel-2.png": make_tiered(make_solar_panel, 2, (130, 200, 255)),
         "sprites/blocks/ic2-solar-panel-3.png": make_tiered(make_solar_panel, 3, (240, 200, 70)),
-        "sprites/blocks/ic2-macerator-2.png": make_tiered(make_macerator, 2, (130, 200, 255)),
-        "sprites/blocks/ic2-macerator-3.png": make_tiered(make_macerator, 3, (240, 200, 70)),
+        "sprites/blocks/ic2-macerator-2.png": make_macerator(2),
+        "sprites/blocks/ic2-macerator-3.png": make_macerator(3),
         "sprites/blocks/ic2-re-battery-2.png": make_batbox(2),
         "sprites/blocks/ic2-re-battery-3.png": make_mfsu(4),
         "sprites/blocks/ic2-alloy-furnace-2.png": make_alloy_furnace(2),
         "sprites/blocks/ic2-alloy-furnace-3.png": make_alloy_furnace(3),
         "sprites/blocks/ic2-lv-cable.png": make_cable((85, 95, 105), (70, 180, 130), (110, 125, 135)),
+        "sprites/blocks/ic2-mv-cable.png": make_cable((70, 95, 75), (123, 255, 90), (110, 160, 120)),
         "sprites/blocks/ic2-hv-cable.png": make_cable((80, 75, 85), (220, 85, 55), (135, 110, 125), True),
         "sprites/blocks/ic2-transformer.png": make_transformer(),
         "sprites/blocks/ic2-upgrade-node.png": make_upgrade_node(),

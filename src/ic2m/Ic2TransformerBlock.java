@@ -61,14 +61,6 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
         }
 
         @Override
-        protected boolean canConnectEnergy(Building other) {
-            if (!(other instanceof Ic2PowerBuilding)) return false;
-            // Transformer bridges cable tiers; connect to anything except another transformer.
-            if (other instanceof Ic2TransformerBlock.Ic2TransformerBuild) return false;
-            return true;
-        }
-
-        @Override
         public boolean acceptsFrom(Building source) {
             if (!canAcceptEnergy()) return false;
             if (outputRotation >= 0) {

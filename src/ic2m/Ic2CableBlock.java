@@ -1,5 +1,6 @@
 package ic2m;
 
+import arc.graphics.Color;
 import arc.graphics.g2d.Draw;
 import arc.graphics.g2d.Lines;
 import arc.struct.IntSeq;
@@ -58,14 +59,24 @@ public class Ic2CableBlock extends Ic2PowerBlock {
         super.drawPlace(x, y, rotation, valid);
         float cx = x * Vars.tilesize + Vars.tilesize * size / 2f;
         float cy = y * Vars.tilesize + Vars.tilesize * size / 2f;
-        Draw.color(highVoltage ? Pal.powerLight : Pal.accent);
+        Draw.color(linkColor());
         Lines.stroke(1.5f);
         Lines.circle(cx, cy, nodeRange * Vars.tilesize);
         Draw.reset();
     }
 
+    /** Line/range colour for this cable's voltage tier (LV blue, MV green, HV orange). */
+    public Color linkColor() {
+        if (powerTier >= 2) return Pal.powerLight;
+        if (powerTier == 1) return Color.valueOf("7bff5a");
+        return Pal.accent;
+    }
+
     public class Ic2CableBuild extends Ic2PowerBuilding {
         public IntSeq links = new IntSeq();
+
+        @Override
+        public int voltageTier() { return powerTier; }
 
         @Override
         public void created() {
@@ -82,19 +93,13 @@ public class Ic2CableBlock extends Ic2PowerBlock {
         }
 
         private boolean linkable(Building other) {
-            if (other instanceof Ic2CableBlock.Ic2CableBuild cable) {
-                return ((Ic2CableBlock)cable.block).powerTier == ((Ic2CableBlock)block).powerTier;
-            }
-            if (other instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild node) {
-                return ((Ic2PowerNodeBlock)node.block).powerTier == ((Ic2CableBlock)block).powerTier;
-            }
-            return other instanceof Ic2TransformerBlock.Ic2TransformerBuild;
+            return canConnectEnergy(other);
         }
 
         private void drawLink(Building other) {
             Draw.z(Layer.power + 1f);
-            Draw.color(highVoltage ? Pal.powerLight : Pal.accent);
-            Lines.stroke(highVoltage ? 1.5f : 1f);
+            Draw.color(linkColor());
+            Lines.stroke(powerTier >= 2 ? 1.5f : 1f);
             Lines.line(x, y, other.x, other.y);
             Draw.reset();
         }
@@ -106,7 +111,7 @@ public class Ic2CableBlock extends Ic2PowerBlock {
                 for (int dy = -nodeRange; dy <= nodeRange; dy++) {
                     if (dx == 0 && dy == 0 || dx * dx + dy * dy > nodeRange * nodeRange) continue;
                     Building other = Vars.world.build(tile.x + dx, tile.y + dy);
-                    if (other == null || other.pos() < pos() || !linkable(other) || !useTarget(other)) continue;
+                    if (other == null || !linkable(other) || !useTarget(other)) continue;
                     drawLink(other);
                 }
             }
@@ -183,17 +188,6 @@ public class Ic2CableBlock extends Ic2PowerBlock {
                     if (energy <= 0f) return;
                 }
             }
-        }
-
-        @Override
-        protected boolean canConnectEnergy(Building other) {
-            if (other instanceof Ic2CableBlock.Ic2CableBuild cable) {
-                return ((Ic2CableBlock)cable.block).powerTier == ((Ic2CableBlock)block).powerTier;
-            }
-            if (other instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild node) {
-                return ((Ic2PowerNodeBlock)node.block).powerTier == ((Ic2CableBlock)block).powerTier;
-            }
-            return super.canConnectEnergy(other);
         }
 
         @Override

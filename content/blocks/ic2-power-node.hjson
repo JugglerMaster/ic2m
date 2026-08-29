@@ -1,7 +1,7 @@
 {
     type: "ic2m.Ic2PowerNodeBlock",
     name: "ic2-power-node",
-    description: "IC2 power node. Bridges the cable network to IC2 buildings: connects to same-tier cables within 3x the cable range and powers/collects from adjacent machines. Cables no longer touch machines directly.",
+    description: "IC2 power node. Ranged bridge for the cable network: connects to same-tier cables within its range and powers/collects from adjacent machines. Cables also connect directly to same-voltage machines.",
     category: "power",
     buildVisibility: "shown",
     size: 1,

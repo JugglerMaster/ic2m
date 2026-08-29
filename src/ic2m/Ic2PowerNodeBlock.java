@@ -35,12 +35,7 @@ public class Ic2PowerNodeBlock extends Ic2PowerBlock {
         }
 
         @Override
-        protected boolean canConnectEnergy(Building other) {
-            if (other instanceof Ic2CableBlock.Ic2CableBuild cable) {
-                return ((Ic2CableBlock)cable.block).powerTier == ((Ic2PowerNodeBlock) block).powerTier;
-            }
-            return true;
-        }
+        public int voltageTier() { return powerTier; }
 
         @Override
         protected void distributePower() {
