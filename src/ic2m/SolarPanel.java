@@ -51,7 +51,7 @@ public class SolarPanel extends Ic2PowerBlock {
 
         void recalculateStats() {
             currentPowerPerTick = upgradeTier == 0 ? 1f : upgradeTier == 1 ? 8f : 64f;
-            maxEnergy = 0f;
+            maxEnergy = basePowerCapacity * tierMultiplier(upgradeTier);
             if (energy > maxEnergy) energy = maxEnergy;
         }
 
