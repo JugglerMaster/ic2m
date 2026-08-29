@@ -129,23 +129,6 @@ public class Ic2PowerBuilding extends Building {
         return canAcceptEnergy();
     }
 
-    public void cycleOutput() {
-        outputRotation = (outputRotation + 1) % 4;
-    }
-
-    protected String outputDirName(int r) {
-        return r < 0 ? "all sides" : r == 0 ? "right" : r == 1 ? "up" : r == 2 ? "left" : "down";
-    }
-
-    /** Adds an "output side" control to a block's config panel (batteries). */
-    protected void addOutputControl(Table table) {
-        TextButton btn = new TextButton("", Styles.defaultt);
-        btn.update(() -> btn.setText("Output side: " + outputDirName(outputRotation) + "   (tap to change)"));
-        btn.clicked(() -> cycleOutput());
-        table.row();
-        table.add(btn).size(280f, 44f);
-    }
-
     /** Whether this block may push EU out to the given neighbour; batteries restrict to one side. */
     protected boolean canOutputTo(Building other) {
         return true;
@@ -170,34 +153,62 @@ public class Ic2PowerBuilding extends Building {
         super.onProximityAdded();
         if (autoLinked || !links.isEmpty()) return;
         autoLinked = true;
-        // Power nodes and transformers keep their own connection logic; only cables, machines,
-        // batteries and generators auto-link to their single nearest compatible neighbour.
+        // Power nodes and transformers keep their own connection logic.
         if (this instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild
             || this instanceof Ic2TransformerBlock.Ic2TransformerBuild) return;
+
         int r = linkRange();
-        Ic2PowerBuilding nearest = null;
-        float best = Float.MAX_VALUE;
-        for (int dx = -r; dx <= r; dx++) {
-            for (int dy = -r; dy <= r; dy++) {
-                if (dx == 0 && dy == 0 || dx * dx + dy * dy > r * r) continue;
-                Building o = Vars.world.build(tile.x + dx, tile.y + dy);
-                if (!(o instanceof Ic2PowerBuilding cb) || cb == this) continue;
-                if (cb instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild
-                    || cb instanceof Ic2TransformerBlock.Ic2TransformerBuild) continue;
-                if (!canConnectEnergy(o)) continue;
-                float d = dx * dx + dy * dy;
-                if (d < best) { best = d; nearest = cb; }
+        boolean cable = this instanceof Ic2CableBlock.Ic2CableBuild;
+
+        if (cable) {
+            // Cables connect to their single nearest compatible block (vanilla-style), so a cable
+            // run does not mesh-link to every nearby cable.
+            Ic2PowerBuilding nearest = null;
+            float best = Float.MAX_VALUE;
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dy = -r; dy <= r; dy++) {
+                    if (dx == 0 && dy == 0 || dx * dx + dy * dy > r * r) continue;
+                    Building o = Vars.world.build(tile.x + dx, tile.y + dy);
+                    if (!(o instanceof Ic2PowerBuilding cb) || cb == this) continue;
+                    if (cb instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild
+                        || cb instanceof Ic2TransformerBlock.Ic2TransformerBuild) continue;
+                    if (!canConnectEnergy(o)) continue;
+                    float d = dx * dx + dy * dy;
+                    if (d < best) { best = d; nearest = cb; }
+                }
             }
-        }
-        if (nearest != null) {
-            links.add(nearest.pos());
-            if (!nearest.links.contains(pos())) nearest.links.add(pos());
+            if (nearest != null) {
+                links.add(nearest.pos());
+                if (!nearest.links.contains(pos())) nearest.links.add(pos());
+            }
+        } else {
+            // Machines, batteries and generators link to EVERY adjacent compatible block, so a
+            // machine placed next to other machines or a source is connected on all sides instead
+            // of only to whichever neighbour happened to be closest.
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dy = -r; dy <= r; dy++) {
+                    if (dx == 0 && dy == 0 || dx * dx + dy * dy > r * r) continue;
+                    Building o = Vars.world.build(tile.x + dx, tile.y + dy);
+                    if (!(o instanceof Ic2PowerBuilding cb) || cb == this) continue;
+                    if (cb instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild
+                        || cb instanceof Ic2TransformerBlock.Ic2TransformerBuild) continue;
+                    if (!canConnectEnergy(o)) continue;
+                    // Consumers (machines, upgrade nodes) may only connect through cables, never
+                    // directly to another block, so power is always routed via the cable network.
+                    boolean otherCable = cb instanceof Ic2CableBlock.Ic2CableBuild;
+                    if ((!canProvideEnergy() && !otherCable) || !cb.canProvideEnergy()) continue;
+                    if (!links.contains(cb.pos())) links.add(cb.pos());
+                    if (!cb.links.contains(pos())) cb.links.add(pos());
+                }
+            }
         }
     }
 
-    /** True for blocks that persistently render their link lines (cables); others only show on select. */
+    /** True for blocks that persistently render their link lines; power nodes and transformers keep
+     *  their own selection-only overlay instead. */
     protected boolean drawsLinks() {
-        return this instanceof Ic2CableBlock.Ic2CableBuild;
+        return !(this instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild
+            || this instanceof Ic2TransformerBlock.Ic2TransformerBuild);
     }
 
     /** Link line colour for this block's voltage tier. */
@@ -384,15 +395,20 @@ public class Ic2PowerBuilding extends Building {
     }
 
     protected void drawEnergyBar() {
-        // Only storage (batteries) show the floating EU bar; generators and
-        // machines don't need a live charge readout on the block.
-        if (!(this instanceof BatteryBlock.BatteryBuild)) return;
-        drawBar(x, y, getEnergyPercentage(), Pal.powerBar);
+        // Floating EU fill bar for any block that actually stores power (batteries, machines,
+        // generators with a buffer). Pass-through generators (solar, maxEnergy 0) and cables are
+        // excluded so cable runs stay clean.
+        if (maxEnergy <= 0f || this instanceof Ic2CableBlock.Ic2CableBuild) return;
+        float half = block.size * Vars.tilesize / 2f;
+        float barW = half;            // narrower bar hugging the right half
+        float cx = x + half / 2f;     // bottom-right
+        float cy = y - half + 2f;     // near the bottom edge
+        drawBar(cx, cy, barW, getEnergyPercentage(), Pal.powerBar);
 
-        // Numeric readout only while the player is hovering the battery.
+        // Numeric readout only while the player is hovering the block.
         Tile hovered = Vars.world.tileWorld(Core.input.mouseWorldX(), Core.input.mouseWorldY());
         if (hovered != null && hovered.build == this) {
-            float ty = y + block.size * Vars.tilesize / 2f + 3f;
+            float ty = y + half + 3f;
             Drawf.text(formatEU(energy) + " / " + formatEU(maxEnergy) + " EU", x, ty, Color.white, 1.5f, Align.center);
         }
     }
@@ -404,9 +420,11 @@ public class Ic2PowerBuilding extends Building {
     }
 
     protected void drawBar(float cx, float cy, float fraction, Color color) {
+        drawBar(cx, cy, block.size * Vars.tilesize - 4f, fraction, color);
+    }
+
+    protected void drawBar(float cx, float cy, float w, float fraction, Color color) {
         fraction = Math.max(0f, Math.min(1f, fraction));
-        float size = block.size * Vars.tilesize;
-        float w = size - 4f;
         float h = 3f;
         float z = Draw.z();
         Draw.z(Layer.power + 1);
@@ -416,7 +434,7 @@ public class Ic2PowerBuilding extends Building {
         float fillW = w * fraction;
         // Left-anchored within the background so it grows rightward and never
         // overflows the sprite.
-        Fill.rect(cx - w / 2 + fillW / 2, cy, fillW, h);
+        Fill.rect(cx - w / 2f + fillW / 2f, cy, fillW, h);
         Draw.color();
         Draw.z(z);
     }
