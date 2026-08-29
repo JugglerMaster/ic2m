@@ -316,22 +316,30 @@ def make_cable(body, core, accent, high_voltage=False):
     return img
 
 def make_transformer():
-    """Industrial transformer with LV/HV terminals and conversion arrows."""
+    """Industrial transformer. The FRONT (east/right edge at rotation 0) is the
+    output side and shows a bold green arrow; the other three sides are inputs.
+    Because the block is rotatable, the arrow always points to the output side."""
     img = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
+    # Housing.
     gradient_rect(draw, (3, 3, 28, 28), (170, 125, 55), (80, 55, 30))
     draw_border(draw, (3, 3, 28, 28), (200, 155, 70))
-    # Transformer coils.
-    for x in (10, 16, 22):
-        draw.rectangle([x - 2, 9, x + 2, 23], outline=(235, 190, 90, 255), width=1)
-        draw.line([(x - 1, 11), (x + 1, 11)], fill=(255, 220, 130, 255), width=1)
-        draw.line([(x - 1, 21), (x + 1, 21)], fill=(110, 70, 30, 255), width=1)
-    # LV/HV terminals and center conversion mark.
-    draw.rectangle([1, 14, 5, 18], fill=(70, 150, 190, 255))
-    draw.rectangle([27, 14, 31, 18], fill=(220, 80, 45, 255))
-    draw.line([(6, 16), (9, 16)], fill=(120, 200, 230, 255), width=1)
-    draw.line([(23, 16), (26, 16)], fill=(255, 130, 70, 255), width=1)
-    draw.polygon([(13, 5), (18, 5), (16, 8)], fill=(255, 225, 130, 255))
+    # Transformer coils (center).
+    for x in (13, 16, 19):
+        draw.rectangle([x - 1, 9, x + 1, 23], outline=(235, 190, 90, 255), width=1)
+    # Step up/down conversion mark in the middle.
+    draw.line([(16, 11), (16, 21)], fill=(255, 225, 130, 255), width=1)
+    draw.polygon([(13, 13), (19, 13), (16, 9)], fill=(255, 225, 130, 255))
+    draw.polygon([(13, 19), (19, 19), (16, 23)], fill=(255, 225, 130, 255))
+    # Input ports on the three non-output sides (west, north, south).
+    for box in [(1, 13, 6, 18), (13, 1, 18, 6), (13, 25, 18, 30)]:
+        draw.rectangle(box, fill=(70, 120, 150, 255))
+        draw.rectangle([box[0] + 1, box[1] + 1, box[2] - 1, box[3] - 1], fill=(120, 190, 220, 255))
+    # OUTPUT port + bold green arrow on the front (east/right) edge.
+    draw.rectangle([25, 12, 31, 19], fill=(50, 130, 70, 255))
+    draw.rectangle([26, 13, 30, 18], fill=(90, 230, 120, 255))
+    draw.rectangle([23, 14, 27, 17], fill=(130, 255, 160, 255))
+    draw.polygon([(27, 10), (27, 21), (31, 15)], fill=(150, 255, 170, 255))
     return img
 
 

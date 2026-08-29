@@ -1,11 +1,15 @@
 package ic2m;
 
+import arc.graphics.g2d.Draw;
+import arc.graphics.g2d.Lines;
 import arc.scene.ui.layout.Table;
 import arc.util.io.Reads;
 import arc.util.io.Writes;
 import mindustry.Vars;
 import mindustry.gen.Building;
 import mindustry.gen.Unit;
+import mindustry.graphics.Layer;
+import mindustry.graphics.Pal;
 import mindustry.world.meta.Stat;
 
 /** Converts between the short-range LV network and long-range HV cables. */
@@ -18,6 +22,7 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
         super(name);
         configurable = true;
         saveConfig = true;
+        rotate = true;
         basePowerCapacity = 500f;
     }
 
@@ -67,14 +72,21 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
 
         @Override
         protected boolean canOutputTo(Building other) {
-            if (outputRotation < 0) return true;
             int dx = other.tile.x - tile.x;
             int dy = other.tile.y - tile.y;
-            return D4[outputRotation][0] == dx && D4[outputRotation][1] == dy;
+            return D4[rotation][0] == dx && D4[rotation][1] == dy;
         }
 
         @Override
-        protected int defaultOutputRotation() { return 1; }
+        protected void drawOutputLink() {
+            float tx = (tile.x + D4[rotation][0]) * Vars.tilesize + Vars.tilesize / 2f;
+            float ty = (tile.y + D4[rotation][1]) * Vars.tilesize + Vars.tilesize / 2f;
+            Draw.z(Layer.power + 1f);
+            Draw.color(Pal.place);
+            Lines.stroke(2f);
+            Lines.line(x, y, tx, ty);
+            Draw.reset();
+        }
 
         private int connectedNodes() {
             int count = 0;
@@ -103,7 +115,7 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
             table.row();
             table.add("EU buffer: " + (int)energy + "/" + (int)maxEnergy);
             table.row();
-            addOutputControl(table);
+            table.add("Output side: faces the way the building points (rotate with R / scroll).");
         }
 
         @Override
@@ -129,14 +141,13 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
         public void write(Writes write) {
             super.write(write);
             write.i(mode);
-            write.i(outputRotation);
         }
 
         @Override
         public void read(Reads read, byte revision) {
             super.read(read, revision);
             if (revision >= 1) mode = read.i();
-            if (revision >= 3) outputRotation = read.i();
+            if (revision >= 3) read.i(); // legacy outputRotation; output now follows rotation
         }
     }
 }
