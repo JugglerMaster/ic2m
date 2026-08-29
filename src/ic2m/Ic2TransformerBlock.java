@@ -62,13 +62,7 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
 
         @Override
         public boolean acceptsFrom(Building source) {
-            if (!canAcceptEnergy()) return false;
-            if (outputRotation >= 0) {
-                int dx = source.tile.x - tile.x;
-                int dy = source.tile.y - tile.y;
-                if (D4[outputRotation][0] == dx && D4[outputRotation][1] == dy) return false;
-            }
-            return true;
+            return canAcceptEnergy();
         }
 
         @Override
