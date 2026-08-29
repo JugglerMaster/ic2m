@@ -294,7 +294,7 @@ public class AlloyFurnaceBlock extends Ic2PowerBlock {
         public byte version() { return 3; }
 
         @Override
-        protected boolean readsOutputState(byte revision) { return revision >= 3; }
+        protected boolean readsOutputState(byte revision) { return true; }
 
         @Override
         public void write(Writes write) {

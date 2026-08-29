@@ -13,6 +13,7 @@ import mindustry.graphics.Pal;
 import mindustry.type.Item;
 import mindustry.type.ItemStack;
 import mindustry.world.Block;
+import mindustry.world.meta.BuildVisibility;
 import mindustry.type.Category;
 import ic2m.Ic2PowerBlock;
 import ic2m.Ic2PowerBuilding;
@@ -36,6 +37,7 @@ public class PowerArmorBench extends Ic2PowerBlock {
         configurable = true;
         saveConfig = true;
         category = Category.power;
+        buildVisibility = BuildVisibility.shown;
         basePowerCapacity = 5000f;
         requirements = ItemStack.with(
             ingot("copper-ingot", Items.copper), 1000,

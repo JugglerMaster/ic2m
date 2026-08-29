@@ -182,7 +182,7 @@ public class MaceratorBlock extends Ic2PowerBlock {
         public byte version() { return 2; }
 
         @Override
-        protected boolean readsOutputState(byte revision) { return revision >= 2; }
+        protected boolean readsOutputState(byte revision) { return true; }
 
         @Override
         public void write(Writes write) {

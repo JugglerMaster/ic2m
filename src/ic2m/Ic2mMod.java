@@ -84,10 +84,9 @@ public class Ic2mMod extends Mod {
     public void init() {
         if (powerArmorBench == null) return;
 
-        // Own tech-tree branch. Researching the suit unlocks bench + recombinator,
-        // and the recombinator gates the jetpack flight module.
+        // Own tech-tree branch. The bench is buildable from the start (no research
+        // gate) so the player can craft the suit; the recombinator gates the jetpack.
         TechTree.nodeRoot("ic2m-power-armor", powerArmorSuit, true, () -> {
-            TechTree.node(powerArmorBench);
             if (naniteRecombinator != null) {
                 TechTree.node(naniteRecombinator, ItemStack.with(Items.copper, 100), () -> {
                     if (jetpackItem != null) {

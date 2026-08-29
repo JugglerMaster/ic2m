@@ -19,15 +19,9 @@ public class Ic2PowerBlock extends Block {
         update = true;
         solid = true;
         hasItems = false;
-
-        addBar("ic2energy", (Func<Building, Bar>)entity -> new Bar(
-            () -> "IC2 Power " + (int)(getEnergy(entity) * 100f) + "%",
-            () -> Pal.powerBar,
-            () -> getEnergy(entity)
-        ));
     }
 
-    private float getEnergy(Building entity){
+    protected float getEnergy(Building entity){
         return entity instanceof Ic2PowerBuilding ic2b ? ic2b.getEnergyPercentage() : 0f;
     }
 
