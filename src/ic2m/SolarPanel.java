@@ -41,18 +41,36 @@ public class SolarPanel extends Ic2PowerBlock {
         @Override
         public void update() {
             if (!enabled) return;
-
-            float multiplier = Vars.state.rules.solarMultiplier;
-            if (multiplier > 0f) {
-                energy = Math.min(maxEnergy, energy + currentPowerPerTick * multiplier);
-            }
             super.update();
         }
 
         void recalculateStats() {
             currentPowerPerTick = upgradeTier == 0 ? 1f : upgradeTier == 1 ? 8f : 64f;
-            maxEnergy = basePowerCapacity * tierMultiplier(upgradeTier);
-            if (energy > maxEnergy) energy = maxEnergy;
+            // Solar panels are pass-through generators: no EU buffer. Generated power is pushed
+            // directly to linked neighbours in distributePower() instead of being stored.
+            maxEnergy = 0f;
+            energy = 0f;
+        }
+
+        /** Pass-through: push this tick's generation straight to linked neighbours without buffering. */
+        @Override
+        protected void distributePower() {
+            if (!canProvideEnergy()) return;
+            float multiplier = Vars.state.rules.solarMultiplier;
+            if (multiplier <= 0f) return;
+            float amount = currentPowerPerTick * multiplier;
+            for (int i = 0; i < links.size; i++) {
+                Building b = Vars.world.build(links.get(i));
+                if (!(b instanceof Ic2PowerBuilding target) || !canConnectEnergy(b)
+                    || !target.acceptsFrom(this) || !canOutputTo(b) || target.energy >= target.maxEnergy) continue;
+                float space = target.maxEnergy - target.energy;
+                float toSend = Math.min(amount, space);
+                if (toSend > 0f) {
+                    float remainder = target.acceptEnergy(toSend);
+                    amount -= toSend - remainder;
+                }
+                if (amount <= 0f) return;
+            }
         }
 
         @Override
@@ -70,7 +88,7 @@ public class SolarPanel extends Ic2PowerBlock {
                 info.row();
                 info.add("Output: " + String.format("%.1f", currentPowerPerTick) + " EU/t").left();
                 info.row();
-                info.add("Storage: " + (int) energy + "/" + (int) maxEnergy).left();
+                info.add("Storage: none (pass-through)").left();
             }).fillX().pad(4);
             table.row();
             table.add("Tier 2-3 upgrades are performed by the IC2 Upgrade Node (arrange a 2x2 with this block).").left().pad(4);
