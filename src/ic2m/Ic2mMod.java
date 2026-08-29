@@ -82,6 +82,8 @@ public class Ic2mMod extends Mod {
 
     @Override
     public void init() {
+        Ic2BuildMenu.init();
+
         if (powerArmorBench == null) return;
 
         // Own tech-tree branch. The bench is buildable from the start (no research
