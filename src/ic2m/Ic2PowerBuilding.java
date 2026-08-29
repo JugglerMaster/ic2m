@@ -3,12 +3,14 @@ package ic2m;
 import arc.graphics.Color;
 import arc.graphics.g2d.Draw;
 import arc.graphics.g2d.Fill;
+import arc.Core;
 import arc.graphics.g2d.Lines;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Table;
 import arc.util.Align;
 import arc.util.io.Reads;
 import arc.util.io.Writes;
+import arc.struct.IntSeq;
 import mindustry.Vars;
 import mindustry.gen.Building;
 import mindustry.graphics.Drawf;
@@ -17,6 +19,7 @@ import mindustry.graphics.Pal;
 import mindustry.type.Item;
 import mindustry.type.ItemStack;
 import mindustry.ui.Styles;
+import mindustry.world.Tile;
 
 
 public class Ic2PowerBuilding extends Building {
@@ -34,6 +37,13 @@ public class Ic2PowerBuilding extends Building {
     /** Side (0=right,1=up,2=left,3=down) this block outputs EU to; -1 = any side. Used by batteries. */
     public int outputRotation = -1;
 
+    /** Persistent links discovered when this block was placed (vanilla-style: each block links to its
+     *  single nearest compatible power block within linkRange). Power flows only along these links. */
+    public IntSeq links = new IntSeq();
+
+    /** Set once auto-linking has run so it is not repeated on every proximity update / load. */
+    public boolean autoLinked = false;
+
     /** Unit offsets for each rotation index: 0=right, 1=up, 2=left, 3=down. */
     protected static final int[][] D4 = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
 
@@ -44,6 +54,15 @@ public class Ic2PowerBuilding extends Building {
     /** Operating voltage tier for connection rules. Machines derive it from their merge tier
      *  (0 = LV / T1, 1 = MV / T2, 2 = HV / T3); cables and nodes override to report powerTier. */
     public int voltageTier() { return upgradeTier; }
+
+    /** Inherent tier from the block's name suffix (-2 -> 1 / T2, -3 -> 2 / T3; base is 0 / T1).
+     *  The hjson 'baseTier' field is not applied by the content loader, so tiers are read from
+     *  the block name to keep connections and capacities correct. */
+    public int inherentTier() {
+        if (block.name.endsWith("-3")) return 2;
+        if (block.name.endsWith("-2")) return 1;
+        return 0;
+    }
 
     /** Items the upgrade node must be fed to merge this block to the given user tier (2 or 3). */
     public ItemStack[] upgradeRequirements(int tier) {
@@ -139,27 +158,73 @@ public class Ic2PowerBuilding extends Building {
     public void created() {
         super.created();
         outputRotation = defaultOutputRotation();
+        baseTier = inherentTier();
     }
 
-    /** Pushes `amount` EU directly into neighbouring acceptors without storing it (used by solar panels). */
-    protected void injectPower(float amount) {
-        if (amount <= 0f) return;
-        int range = 1;
-        for (int dx = -range; dx <= range; dx++) {
-            for (int dy = -range; dy <= range; dy++) {
-                if (dx == 0 && dy == 0) continue;
-                Building other = Vars.world.build(tile.x + dx, tile.y + dy);
-                if (other instanceof Ic2PowerBuilding target && canConnectEnergy(other) && target.acceptsFrom(this)) {
-                    float space = target.maxEnergy - target.energy;
-                    float toSend = Math.min(amount, space);
-                    if (toSend > 0f) {
-                        float remainder = target.acceptEnergy(toSend);
-                        amount -= toSend - remainder;
-                    }
-                    if (amount <= 0f) return;
-                }
+    /** Connection reach used when auto-linking on placement. Cables override to their nodeRange so a
+     *  cable line can span gaps; machines default to adjacent (1). */
+    protected int linkRange() { return 1; }
+
+    @Override
+    public void onProximityAdded() {
+        super.onProximityAdded();
+        if (autoLinked || !links.isEmpty()) return;
+        autoLinked = true;
+        // Power nodes and transformers keep their own connection logic; only cables, machines,
+        // batteries and generators auto-link to their single nearest compatible neighbour.
+        if (this instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild
+            || this instanceof Ic2TransformerBlock.Ic2TransformerBuild) return;
+        int r = linkRange();
+        Ic2PowerBuilding nearest = null;
+        float best = Float.MAX_VALUE;
+        for (int dx = -r; dx <= r; dx++) {
+            for (int dy = -r; dy <= r; dy++) {
+                if (dx == 0 && dy == 0 || dx * dx + dy * dy > r * r) continue;
+                Building o = Vars.world.build(tile.x + dx, tile.y + dy);
+                if (!(o instanceof Ic2PowerBuilding cb) || cb == this) continue;
+                if (cb instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild
+                    || cb instanceof Ic2TransformerBlock.Ic2TransformerBuild) continue;
+                if (!canConnectEnergy(o)) continue;
+                float d = dx * dx + dy * dy;
+                if (d < best) { best = d; nearest = cb; }
             }
         }
+        if (nearest != null) {
+            links.add(nearest.pos());
+            if (!nearest.links.contains(pos())) nearest.links.add(pos());
+        }
+    }
+
+    /** True for blocks that persistently render their link lines (cables); others only show on select. */
+    protected boolean drawsLinks() {
+        return this instanceof Ic2CableBlock.Ic2CableBuild;
+    }
+
+    /** Link line colour for this block's voltage tier. */
+    protected Color linkColor() { return Pal.accent; }
+
+    /** Draws one line per established link. */
+    protected void drawLinks() {
+        if (links.isEmpty()) return;
+        Draw.z(Layer.power + 1f);
+        Draw.color(linkColor());
+        Lines.stroke(1f);
+        for (int i = 0; i < links.size; i++) {
+            Building b = Vars.world.build(links.get(i));
+            if (b == null || b == this) continue;
+            Lines.line(x, y, b.x, b.y);
+        }
+        Draw.reset();
+    }
+
+    @Override
+    public void onRemoved() {
+        for (int i = 0; i < links.size; i++) {
+            Building b = Vars.world.build(links.get(i));
+            if (b instanceof Ic2PowerBuilding pb && pb.links.contains(pos())) pb.links.removeValue(pos());
+        }
+        links.clear();
+        super.onRemoved();
     }
 
     /** Consumes up to `needed` EU for one craft tick; returns the progress increment (penalized when starved). */
@@ -223,22 +288,17 @@ public class Ic2PowerBuilding extends Building {
     protected void distributePower() {
         if (energy <= 0f || !canProvideEnergy()) return;
 
-        int range = 1;
-        for (int dx = -range; dx <= range; dx++) {
-            for (int dy = -range; dy <= range; dy++) {
-                if (dx == 0 && dy == 0) continue;
-                Building other = Vars.world.build(tile.x + dx, tile.y + dy);
-                if (other instanceof Ic2PowerBuilding ic2b && canConnectEnergy(other)
-                    && ic2b.acceptsFrom(this) && canOutputTo(other) && ic2b.energy < ic2b.maxEnergy) {
-                    float space = ic2b.maxEnergy - ic2b.energy;
-                    float toSend = Math.min(energy, Math.min(space, powerTransferRate()));
-                    if (toSend > 0f) {
-                        float remainder = ic2b.acceptEnergy(toSend);
-                        energy -= toSend - remainder;
-                    }
-                    if (energy <= 0f) return;
-                }
+        for (int i = 0; i < links.size; i++) {
+            Building b = Vars.world.build(links.get(i));
+            if (!(b instanceof Ic2PowerBuilding target) || !canConnectEnergy(b)
+                || !target.acceptsFrom(this) || !canOutputTo(b) || target.energy >= target.maxEnergy) continue;
+            float space = target.maxEnergy - target.energy;
+            float toSend = Math.min(energy, Math.min(space, powerTransferRate()));
+            if (toSend > 0f) {
+                float remainder = target.acceptEnergy(toSend);
+                energy -= toSend - remainder;
             }
+            if (energy <= 0f) return;
         }
     }
 
@@ -258,6 +318,7 @@ public class Ic2PowerBuilding extends Building {
         super.draw();
         drawEnergyBar();
         drawProgressBar();
+        if (drawsLinks()) drawLinks();
     }
 
     /** Progress between 0 and 1 for crafting machines; 0 for plain power blocks. */
@@ -268,9 +329,7 @@ public class Ic2PowerBuilding extends Building {
     public void drawSelect() {
         super.drawSelect();
         drawRange();
-        if (!(this instanceof Ic2CableBlock.Ic2CableBuild)) {
-            drawConnections();
-        }
+        if (!drawsLinks()) drawLinks();
         drawOutputLink();
     }
 
@@ -325,9 +384,17 @@ public class Ic2PowerBuilding extends Building {
     }
 
     protected void drawEnergyBar() {
-        Color c = this instanceof Ic2CableBlock.Ic2CableBuild cable
-            ? ((Ic2CableBlock) cable.block).linkColor() : Pal.powerBar;
-        drawBar(x, y, getEnergyPercentage(), c);
+        // Only storage (batteries) show the floating EU bar; generators and
+        // machines don't need a live charge readout on the block.
+        if (!(this instanceof BatteryBlock.BatteryBuild)) return;
+        drawBar(x, y, getEnergyPercentage(), Pal.powerBar);
+
+        // Numeric readout only while the player is hovering the battery.
+        Tile hovered = Vars.world.tileWorld(Core.input.mouseWorldX(), Core.input.mouseWorldY());
+        if (hovered != null && hovered.build == this) {
+            float ty = y + block.size * Vars.tilesize / 2f + 3f;
+            Drawf.text(formatEU(energy) + " / " + formatEU(maxEnergy) + " EU", x, ty, Color.white, 1.5f, Align.center);
+        }
     }
 
     protected void drawProgressBar() {
@@ -337,6 +404,7 @@ public class Ic2PowerBuilding extends Building {
     }
 
     protected void drawBar(float cx, float cy, float fraction, Color color) {
+        fraction = Math.max(0f, Math.min(1f, fraction));
         float size = block.size * Vars.tilesize;
         float w = size - 4f;
         float h = 3f;
@@ -345,7 +413,10 @@ public class Ic2PowerBuilding extends Building {
         Draw.color(0f, 0f, 0f, 0.7f);
         Fill.rect(cx, cy, w, h);
         Draw.color(color);
-        Fill.rect(cx - w / 2f, cy, w * fraction, h);
+        float fillW = w * fraction;
+        // Left-anchored within the background so it grows rightward and never
+        // overflows the sprite.
+        Fill.rect(cx - w / 2 + fillW / 2, cy, fillW, h);
         Draw.color();
         Draw.z(z);
     }
@@ -364,6 +435,8 @@ public class Ic2PowerBuilding extends Building {
             write.i(pendingOutput == null ? -1 : pendingOutput.id);
             write.i(pendingOutputAmount);
         }
+        write.i(links.size);
+        for (int i = 0; i < links.size; i++) write.i(links.get(i));
     }
 
     @Override
@@ -376,5 +449,9 @@ public class Ic2PowerBuilding extends Building {
             pendingOutput = outputId >= 0 ? Vars.content.item(outputId) : null;
             pendingOutputAmount = read.i();
         }
+        int count = read.i();
+        links.clear();
+        for (int i = 0; i < count; i++) links.add(read.i());
+        autoLinked = true;
     }
 }

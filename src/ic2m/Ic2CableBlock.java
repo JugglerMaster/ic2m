@@ -57,8 +57,10 @@ public class Ic2CableBlock extends Ic2PowerBlock {
     @Override
     public void drawPlace(int x, int y, int rotation, boolean valid) {
         super.drawPlace(x, y, rotation, valid);
-        float cx = x * Vars.tilesize + Vars.tilesize * size / 2f;
-        float cy = y * Vars.tilesize + Vars.tilesize * size / 2f;
+        // Use the block's true placement offset so the range circle is centred on where the
+        // building will actually land (matches how the placed building's x/y is computed).
+        float cx = x * Vars.tilesize + offset;
+        float cy = y * Vars.tilesize + offset;
         Draw.color(linkColor());
         Lines.stroke(1.5f);
         Lines.circle(cx, cy, nodeRange * Vars.tilesize);
@@ -73,7 +75,6 @@ public class Ic2CableBlock extends Ic2PowerBlock {
     }
 
     public class Ic2CableBuild extends Ic2PowerBuilding {
-        public IntSeq links = new IntSeq();
 
         @Override
         public int voltageTier() { return powerTier; }
@@ -88,33 +89,8 @@ public class Ic2CableBlock extends Ic2PowerBlock {
             return links.contains(other.pos());
         }
 
-        private boolean useTarget(Building other) {
-            return links.size == 0 || hasLink(other);
-        }
-
         private boolean linkable(Building other) {
             return canConnectEnergy(other);
-        }
-
-        private void drawLink(Building other) {
-            Draw.z(Layer.power + 1f);
-            Draw.color(linkColor());
-            Lines.stroke(powerTier >= 2 ? 1.5f : 1f);
-            Lines.line(x, y, other.x, other.y);
-            Draw.reset();
-        }
-
-        @Override
-        public void draw() {
-            super.draw();
-            for (int dx = -nodeRange; dx <= nodeRange; dx++) {
-                for (int dy = -nodeRange; dy <= nodeRange; dy++) {
-                    if (dx == 0 && dy == 0 || dx * dx + dy * dy > nodeRange * nodeRange) continue;
-                    Building other = Vars.world.build(tile.x + dx, tile.y + dy);
-                    if (other == null || !linkable(other) || !useTarget(other)) continue;
-                    drawLink(other);
-                }
-            }
         }
 
         private boolean withinRange(Building other) {
@@ -122,16 +98,19 @@ public class Ic2CableBlock extends Ic2PowerBlock {
             return dx * dx + dy * dy <= nodeRange * nodeRange;
         }
 
+        /** Cables auto-link (and transfer) across their full nodeRange, not just to adjacent tiles. */
+        @Override
+        protected int linkRange() { return nodeRange; }
+
         @Override
         public boolean onConfigureBuildTapped(Building other) {
             if (!withinRange(other) || !linkable(other)) return false;
             if (links.contains(other.pos())) {
                 links.removeValue(other.pos());
-                if (other instanceof Ic2CableBlock.Ic2CableBuild cable) cable.links.removeValue(pos());
+                if (other instanceof Ic2PowerBuilding pb && pb.links.contains(pos())) pb.links.removeValue(pos());
             } else {
-                if (links.size >= 2) return true;
                 links.add(other.pos());
-                if (other instanceof Ic2CableBlock.Ic2CableBuild cable && !cable.links.contains(pos())) cable.links.add(pos());
+                if (other instanceof Ic2PowerBuilding pb && !pb.links.contains(pos())) pb.links.add(pos());
             }
             return true;
         }
@@ -141,7 +120,7 @@ public class Ic2CableBlock extends Ic2PowerBlock {
             table.add((highVoltage ? "HV" : "LV") + " Cable Network").left().row();
             table.add("Range: " + nodeRange + " tiles").left().row();
             table.add("Transfer: " + (int)transferRate + " EU/t | Loss: " + (int)(loss * 100f) + "%").left().row();
-            table.add("Manual links: " + links.size + " (tap compatible nodes to toggle)").left();
+            table.add("Manual links: " + links.size + " (tap a compatible block in range to toggle)").left();
         }
 
         @Override
@@ -156,6 +135,7 @@ public class Ic2CableBlock extends Ic2PowerBlock {
                 links.addAll(positions);
             }
         }
+
         @Override
         public boolean canAcceptEnergy() {
             return true;
@@ -169,24 +149,17 @@ public class Ic2CableBlock extends Ic2PowerBlock {
         @Override
         protected void distributePower() {
             if (energy <= 0f || !canProvideEnergy()) return;
-
-            for (int dx = -nodeRange; dx <= nodeRange; dx++) {
-                for (int dy = -nodeRange; dy <= nodeRange; dy++) {
-                    if (dx == 0 && dy == 0 || dx * dx + dy * dy > nodeRange * nodeRange) continue;
-                    Building other = Vars.world.build(tile.x + dx, tile.y + dy);
-                    if (!(other instanceof Ic2PowerBuilding target) || !canConnectEnergy(other) || !useTarget(other)
-                        || !target.acceptsFrom(this) || target.energy >= target.maxEnergy) continue;
-                    boolean adjacent = Math.max(Math.abs(dx), Math.abs(dy)) <= 1;
-                    if (!adjacent && !links.contains(other.pos())) continue;
-
-                    float toSend = EuTransferRules.sourceAmount(energy, target.maxEnergy - target.energy,
-                        transferRate, 1f - loss);
-                    if (toSend > 0f) {
-                        float remainder = target.acceptEnergy(EuTransferRules.targetAmount(toSend, 1f - loss));
-                        energy -= toSend - remainder / (1f - loss);
-                    }
-                    if (energy <= 0f) return;
+            for (int i = 0; i < links.size; i++) {
+                Building b = Vars.world.build(links.get(i));
+                if (!(b instanceof Ic2PowerBuilding target) || !canConnectEnergy(b)
+                    || !target.acceptsFrom(this) || !canOutputTo(b) || target.energy >= target.maxEnergy) continue;
+                float space = target.maxEnergy - target.energy;
+                float toSend = EuTransferRules.sourceAmount(energy, space, transferRate, 1f - loss);
+                if (toSend > 0f) {
+                    float remainder = target.acceptEnergy(EuTransferRules.targetAmount(toSend, 1f - loss));
+                    energy -= toSend - remainder / (1f - loss);
                 }
+                if (energy <= 0f) return;
             }
         }
 
@@ -202,18 +175,11 @@ public class Ic2CableBlock extends Ic2PowerBlock {
         @Override
         public void write(Writes write) {
             super.write(write);
-            write.i(links.size);
-            for (int i = 0; i < links.size; i++) write.i(links.get(i));
         }
 
         @Override
         public void read(Reads read, byte revision) {
             super.read(read, revision);
-            links.clear();
-            if (revision >= 1) {
-                int count = read.i();
-                for (int i = 0; i < count; i++) links.add(read.i());
-            }
         }
     }
 }

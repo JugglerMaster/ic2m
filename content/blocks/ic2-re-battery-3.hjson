@@ -10,7 +10,6 @@
     hasPower: false,
     update: true,
     solid: true,
-    baseTier: 2,
     requirements: [
         copper/320,
         lead/160

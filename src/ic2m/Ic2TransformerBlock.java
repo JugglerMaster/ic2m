@@ -88,6 +88,12 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
             Draw.reset();
         }
 
+        @Override
+        public void drawSelect() {
+            super.drawSelect();
+            drawConnections();
+        }
+
         private int connectedNodes() {
             int count = 0;
             int radius = 24;
@@ -147,7 +153,6 @@ public class Ic2TransformerBlock extends Ic2PowerBlock {
         public void read(Reads read, byte revision) {
             super.read(read, revision);
             if (revision >= 1) mode = read.i();
-            if (revision >= 3) read.i(); // legacy outputRotation; output now follows rotation
         }
     }
 }

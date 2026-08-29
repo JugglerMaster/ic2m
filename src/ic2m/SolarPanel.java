@@ -40,13 +40,13 @@ public class SolarPanel extends Ic2PowerBlock {
 
         @Override
         public void update() {
-            super.update();
             if (!enabled) return;
 
             float multiplier = Vars.state.rules.solarMultiplier;
             if (multiplier > 0f) {
-                injectPower(currentPowerPerTick * multiplier);
+                energy = Math.min(maxEnergy, energy + currentPowerPerTick * multiplier);
             }
+            super.update();
         }
 
         void recalculateStats() {

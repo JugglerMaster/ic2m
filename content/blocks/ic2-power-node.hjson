@@ -8,7 +8,6 @@
     health: 80,
     powerTier: 0,
     nodeRange: 6,
-    transferRate: 32,
     requirements: [
         copper/4,
         lead/2

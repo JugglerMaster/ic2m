@@ -39,8 +39,6 @@ public class Ic2PowerNodeBlock extends Ic2PowerBlock {
     }
 
     public class Ic2PowerNodeBuild extends Ic2PowerBuilding {
-        public IntSeq links = new IntSeq();
-
         @Override
         public void created() {
             super.created();
@@ -180,18 +178,11 @@ public class Ic2PowerNodeBlock extends Ic2PowerBlock {
         @Override
         public void write(Writes write) {
             super.write(write);
-            write.i(links.size);
-            for (int i = 0; i < links.size; i++) write.i(links.get(i));
         }
 
         @Override
         public void read(Reads read, byte revision) {
             super.read(read, revision);
-            links.clear();
-            if (revision >= 1) {
-                int count = read.i();
-                for (int i = 0; i < count; i++) links.add(read.i());
-            }
         }
     }
 }

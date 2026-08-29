@@ -10,7 +10,6 @@
     hasPower: false,
     update: true,
     solid: true,
-    baseTier: 2,
     itemCapacity: 10,
     requirements: [
         copper/640,
