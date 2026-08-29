@@ -35,7 +35,7 @@ public class PowerArmorBench extends Ic2PowerBlock {
         update = false;
         configurable = true;
         saveConfig = true;
-        category = Category.units;
+        category = Category.power;
         basePowerCapacity = 5000f;
         requirements = ItemStack.with(
             ingot("copper-ingot", Items.copper), 1000,

@@ -248,47 +248,51 @@ def make_macerator(tier=1):
     return img
 
 def make_alloy_furnace(tier=1):
-    """Alloy furnace. Higher tiers read as the same machine, just hotter and
-    more detailed, since a tier is only a faster version of the last."""
+    """Alloy furnace redrawn as an industrial smelting oven: a metal cabinet with a
+    glowing front window. Higher tiers glow hotter (orange -> blue -> white-blue)."""
     size = (1 << (tier - 1)) * SIZE
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    # Iron body.
-    gradient_rect(draw, (3, 3, size - 4, size - 4), (82, 62, 52), (48, 34, 28))
-    draw_border(draw, (3, 3, size - 4, size - 4), (104, 84, 72))
-    # Crucible on top.
-    cw = max(10, size // 3)
-    cx0 = (size - cw) // 2
-    draw.rectangle([cx0, 4, cx0 + cw, 4 + cw // 2], fill=(120, 80, 40))
-    draw.rectangle([cx0 + 1, 5, cx0 + cw - 1, 4 + cw // 2 - 1], fill=(165, 105, 55))
-    # Chimney.
-    draw.rectangle([size // 2 - 2, 1, size // 2 + 2, 5], fill=(70, 70, 80))
-    # Fire opening.
-    fw = max(8, size // 2 - 4)
-    fx0 = (size - fw) // 2
-    fy0 = size - 4 - fw
-    draw.rectangle([fx0, fy0, fx0 + fw, fy0 + fw], fill=(22, 14, 10))
-    # Flame palette per tier: orange -> blue -> white-blue (hotter).
-    flames = [
-        [(255, 150, 30), (255, 200, 60)],
-        [(255, 120, 50), (150, 200, 255)],
-        [(180, 220, 255), (235, 248, 255)],
+    m = 3
+    # Cabinet body.
+    gradient_rect(draw, (m, m, size - m - 1, size - m - 1), (98, 102, 112), (54, 58, 68))
+    draw_border(draw, (m, m, size - m - 1, size - m - 1), (150, 156, 168))
+    # Heat palette per tier: orange -> blue -> white-blue (hotter).
+    heat = [
+        [(255, 150, 30), (255, 205, 70)],
+        [(255, 130, 60), (150, 200, 255)],
+        [(190, 225, 255), (240, 250, 255)],
     ][min(tier, 3) - 1]
-    for i in range(3 + tier):
-        fx = int(fx0 + fw / 2 + (i - (3 + tier - 1) / 2) * (fw / (3 + tier)))
-        draw.rectangle([fx - 1, fy0 + 2, fx + 1, fy0 + fw - 1], fill=flames[0])
-        draw.point((fx, fy0 + 1), fill=flames[1])
-    # Metal pour from crucible to fire.
-    draw.line([(size // 2 - 1, 4 + cw // 2), (size // 2 - 1, fy0)], fill=(200, 150, 50))
-    draw.line([(size // 2 + 1, 4 + cw // 2), (size // 2 + 1, fy0)], fill=(225, 175, 65))
-    # Tier accents: hotter glow as it scales up.
+    # Top vent louvers.
+    vy0 = m + max(3, int(size * 0.10))
+    for i in range(2 + tier):
+        yy = vy0 + i * max(2, int(size * 0.04))
+        draw.line([(m + 6, yy), (size - m - 6, yy)], fill=(40, 44, 52), width=1)
+    # Oven door (rounded rectangle) filling the lower front.
+    dw = int(size * 0.62)
+    dh = int(size * 0.54)
+    dx0 = int((size - dw) / 2)
+    dy0 = int(size * 0.36)
+    dr = max(2, int(size * 0.07))
+    draw.rounded_rectangle([dx0, dy0, dx0 + dw, dy0 + dh], radius=dr,
+                           fill=(64, 68, 78), outline=(28, 30, 38), width=max(1, int(size * 0.03)))
+    # Glowing window inside the door.
+    wx0 = int(dx0 + dw * 0.14); wy0 = int(dy0 + dh * 0.14)
+    wx1 = int(dx0 + dw * 0.86); wy1 = int(dy0 + dh * 0.86)
+    wr = max(2, int(size * 0.05))
+    draw.rounded_rectangle([wx0, wy0, wx1, wy1], radius=wr, fill=heat[0])
+    draw.rounded_rectangle([int(wx0 + dw * 0.13), int(wy0 + dh * 0.13),
+                            int(wx1 - dw * 0.13), int(wy1 - dh * 0.13)],
+                           radius=max(1, int(size * 0.04)), fill=heat[1])
+    # Door handle.
+    hw = max(3, int(dw * 0.10))
+    hy = int(dy0 - max(2, int(size * 0.03)))
+    draw.rectangle([int(dx0 + dw / 2 - hw / 2), hy,
+                    int(dx0 + dw / 2 + hw / 2), int(dy0 + 2)], fill=(185, 189, 197))
+    # Tier accents: side status lights as it scales up.
     if tier >= 2:
-        draw.ellipse([fx0 - 3, fy0 - 3, fx0 + fw + 3, fy0 + fw + 3], outline=flames[1], width=2)
-    if tier >= 3:
-        for (vx, vy) in [(5, size // 2), (size - 6, size // 2)]:
-            draw.ellipse([vx - 2, vy - 2, vx + 2, vy + 2], fill=flames[1])
-        draw.ellipse([size // 2 - 4, size // 2 - 4, size // 2 + 4, size // 2 + 4],
-                     fill=(flames[1][0] // 2, flames[1][1] // 2, flames[1][2] // 2, 140))
+        for (lx, ly) in [(m + 4, int(size * 0.5)), (size - m - 8, int(size * 0.5))]:
+            draw.ellipse([lx, ly, lx + 4, ly + 4], fill=heat[1])
     return img
 
 def make_cable(body, core, accent, high_voltage=False):
@@ -521,6 +525,43 @@ def make_power_armor_base():
     return img
 
 
+def make_armor_bench():
+    """Power armor bench: a 2x2 workbench with a glowing chestplate being assembled on top."""
+    size = 2 * SIZE  # 2x2 block -> 64x64
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    m = 3
+    # Bench cabinet body (lower 55%).
+    top = int(size * 0.46)
+    gradient_rect(draw, (m, top, size - m - 1, size - m - 1), (120, 124, 134), (70, 74, 84))
+    draw_border(draw, (m, top, size - m - 1, size - m - 1), (162, 167, 177))
+    # Cabinet door seam + handle.
+    draw.line([(size // 2, top + 4), (size // 2, size - m - 3)], fill=(50, 54, 64), width=1)
+    draw.rectangle([size // 2 - 1, int(size * 0.62), size // 2 + 1, int(size * 0.72)], fill=(190, 194, 202))
+    # Tabletop slab.
+    draw.rectangle([m - 1, top - 5, size - m, top + 1], fill=(150, 154, 164))
+    draw.rectangle([m - 1, top - 5, size - m, top - 3], fill=(186, 190, 199))
+    # Legs.
+    for lx in (m + 4, size - m - 7):
+        draw.rectangle([lx, top + 2, lx + 3, size - m - 1], fill=(95, 99, 109))
+    # Glowing armor chestplate resting on the bench.
+    cx, cy = size // 2, int(size * 0.30)
+    draw.ellipse([cx - 15, cy - 12, cx + 15, cy + 13], fill=(34, 60, 80))
+    draw.ellipse([cx - 12, cy - 9, cx + 12, cy + 10], fill=(70, 190, 220))
+    draw.ellipse([cx - 12, cy - 9, cx + 12, cy + 10], outline=(180, 240, 255), width=1)
+    draw.ellipse([cx - 6, cy - 4, cx + 6, cy + 5], fill=(200, 245, 255))
+    # Left tool: wrench.
+    draw.rectangle([12, int(size * 0.52), 14, int(size * 0.72)], fill=(150, 154, 164))
+    draw.ellipse([8, int(size * 0.50), 20, int(size * 0.62)], fill=(170, 174, 184))
+    draw.ellipse([11, int(size * 0.53), 17, int(size * 0.59)], fill=(60, 64, 74))
+    # Right tool: gear.
+    draw.ellipse([size - 22, int(size * 0.56), size - 8, int(size * 0.70)], fill=(150, 154, 164))
+    draw.ellipse([size - 19, int(size * 0.59), size - 11, int(size * 0.67)], fill=(70, 74, 84))
+    # Power indicator (teal) on the cabinet front.
+    draw.ellipse([size // 2 - 3, size - 11, size // 2 + 3, size - 5], fill=(90, 220, 230))
+    return img
+
+
 if __name__ == "__main__":
     import os
     os.makedirs("sprites/items", exist_ok=True)
@@ -560,6 +601,7 @@ if __name__ == "__main__":
         "sprites/ic2m-power-armor.png": make_power_armor_body(),
         "sprites/ic2m-power-armor-leg.png": make_power_armor_leg(),
         "sprites/ic2m-power-armor-base.png": make_power_armor_base(),
+        "sprites/blocks/ic2m-power-armor-bench.png": make_armor_bench(),
     }
 
     for path, img in sprites.items():
