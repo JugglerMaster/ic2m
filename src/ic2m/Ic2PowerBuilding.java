@@ -204,11 +204,9 @@ public class Ic2PowerBuilding extends Building {
         }
     }
 
-    /** True for blocks that persistently render their link lines; power nodes and transformers keep
-     *  their own selection-only overlay instead. */
+    /** Neighbour connection lines are not painted persistently; select a block to inspect its links. */
     protected boolean drawsLinks() {
-        return !(this instanceof Ic2PowerNodeBlock.Ic2PowerNodeBuild
-            || this instanceof Ic2TransformerBlock.Ic2TransformerBuild);
+        return false;
     }
 
     /** Link line colour for this block's voltage tier. */
