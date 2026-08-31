@@ -97,5 +97,11 @@ public class BatteryBlock extends Ic2PowerBlock {
             if (tier == 3) return withAlloy(tier, resolveItem("thorium-alloy"), 400);
             return new ItemStack[0];
         }
+
+        @Override
+        public void drawSelect() {
+            super.drawSelect();
+            drawOutputLink();
+        }
     }
 }
