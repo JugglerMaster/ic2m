@@ -64,6 +64,9 @@ public final class EuIntegrationHarness implements ApplicationListener {
             // generator scheduling and tests the cable's own transfer behavior.
             cable.energy = source.provideEnergy(20f);
             source.energy = source.maxEnergy;
+            // The harness places tiles directly (no proximities), so link the cable to its
+            // target manually to give it a transfer path.
+            cable.onConfigureBuildTapped(target);
 
             for (int i = 0; i < 4; i++) {
                 cable.distributePower();
@@ -75,58 +78,60 @@ public final class EuIntegrationHarness implements ApplicationListener {
             check("LV cable stayed within capacity", cable.energy <= cable.maxEnergy);
             check("source remained isolated from cable output", source.energy == source.maxEnergy);
 
-            Ic2CableBlock hvBlock = new Ic2CableBlock("eu-test-hv-cable");
-            hvBlock.highVoltage = true;
-            hvBlock.nodeRange = 16;
-            hvBlock.transferRate = 10f;
-            hvBlock.loss = 0f;
-            hvBlock.cableCapacity = 100f;
-            hvBlock.init();
+            // --- Transformer: two bridge pairs (LV<->MV, MV<->HV) with up/down direction ---
+            Ic2CableBlock mvBlock = new Ic2CableBlock("eu-test-mv-cable");
+            mvBlock.powerTier = 1;
+            mvBlock.nodeRange = 2;
+            mvBlock.transferRate = 10f;
+            mvBlock.loss = 0f;
+            mvBlock.cableCapacity = 100f;
+            mvBlock.init();
+            Ic2CableBlock hv2Block = new Ic2CableBlock("eu-test-hv2-cable");
+            hv2Block.powerTier = 2;
+            hv2Block.highVoltage = true;
+            hv2Block.nodeRange = 2;
+            hv2Block.transferRate = 10f;
+            hv2Block.loss = 0f;
+            hv2Block.cableCapacity = 100f;
+            hv2Block.init();
             Ic2TransformerBlock transformerBlock = new Ic2TransformerBlock("eu-test-transformer");
             transformerBlock.init();
 
-            BatteryBlock.BatteryBuild hvSource = place(batteryBlock, 4, 2);
-            Ic2TransformerBlock.Ic2TransformerBuild stepUp = place(transformerBlock, 6, 2);
-            Ic2CableBlock.Ic2CableBuild hvCable = place(hvBlock, 8, 2);
-            Ic2TransformerBlock.Ic2TransformerBuild stepDown = place(transformerBlock, 24, 2);
-            BatteryBlock.BatteryBuild hvTarget = place(batteryBlock, 26, 2);
-            stepDown.mode = Ic2TransformerBlock.MODE_STEP_DOWN;
-            hvCable.onConfigureBuildTapped(stepUp);
-            hvCable.onConfigureBuildTapped(stepDown);
-            hvSource.energy = 20f;
-            for (int i = 0; i < 8; i++) {
-                hvSource.update();
-                stepUp.update();
-                hvCable.update();
-                stepDown.update();
-                hvTarget.update();
-            }
-            check("HV transformer path transferred energy", hvTarget.energy > 0f);
-            check("HV transfer used both manual links", hvCable.links.size == 2);
+            // Probes for the tier-gating checks (independent of the transfer runs below).
+            Ic2CableBlock.Ic2CableBuild mvProbe = place(mvBlock, 4, 0);
+            Ic2CableBlock.Ic2CableBuild hvProbe = place(hv2Block, 5, 0);
+            BatteryBlock.BatteryBuild lvProbe = place(batteryBlock, 6, 0);
 
-            // HV must not bypass transformers in either direction.
-            Ic2CableBlock isolatedHvBlock = new Ic2CableBlock("eu-test-isolated-hv");
-            isolatedHvBlock.highVoltage = true;
-            isolatedHvBlock.nodeRange = 2;
-            isolatedHvBlock.init();
-            Ic2CableBlock.Ic2CableBuild isolatedCable = place(isolatedHvBlock, 4, 6);
-            BatteryBlock.BatteryBuild isolatedMachine = place(batteryBlock, 6, 6);
-            isolatedCable.energy = 20f;
-            isolatedCable.update();
-            check("HV cable cannot directly power LV machine", isolatedMachine.energy == 0f);
+            // LV -> MV step-up (pair0): transformer rotation 0 faces +x into an MV cable (tier1).
+            Ic2TransformerBlock.Ic2TransformerBuild stepUpLM = place(transformerBlock, 1, 2);
+            Ic2CableBlock.Ic2CableBuild mvCable = place(mvBlock, 2, 2);
+            stepUpLM.energy = 20f;
+            stepUpLM.update();
+            check("step-up LV->MV feeds the faced MV cable", mvCable.energy > 0f);
+            check("step-up LV->MV accepts LV input", stepUpLM.acceptsFrom(lvProbe));
+            check("step-up LV->MV rejects MV input", !stepUpLM.acceptsFrom(mvProbe));
+            check("step-up LV->MV rejects HV input", !stepUpLM.acceptsFrom(hvProbe));
 
-            Ic2TransformerBlock.Ic2TransformerBuild isolatedStepUp = place(transformerBlock, 10, 6);
-            Ic2CableBlock.Ic2CableBuild incomingHv = place(isolatedHvBlock, 12, 6);
-            incomingHv.energy = 20f;
-            incomingHv.update();
-            check("step-up transformer rejects HV input", isolatedStepUp.energy == 0f);
+            // MV -> LV step-down (pair0): transformer faces an LV machine (tier0).
+            Ic2TransformerBlock.Ic2TransformerBuild stepDownML = place(transformerBlock, 1, 4);
+            stepDownML.mode = Ic2TransformerBlock.MODE_STEP_DOWN;
+            BatteryBlock.BatteryBuild lvTarget = place(batteryBlock, 2, 4);
+            stepDownML.energy = 20f;
+            stepDownML.update();
+            check("step-down MV->LV feeds the faced LV machine", lvTarget.energy > 0f);
+            check("step-down MV->LV accepts MV input", stepDownML.acceptsFrom(mvProbe));
+            check("step-down MV->LV rejects LV input", !stepDownML.acceptsFrom(lvTarget));
+            check("step-down MV->LV rejects HV input", !stepDownML.acceptsFrom(hvProbe));
 
-            Ic2TransformerBlock.Ic2TransformerBuild isolatedStepDown = place(transformerBlock, 16, 6);
-            isolatedStepDown.mode = Ic2TransformerBlock.MODE_STEP_DOWN;
-            Ic2CableBlock.Ic2CableBuild outgoingHv = place(isolatedHvBlock, 18, 6);
-            isolatedStepDown.energy = 20f;
-            isolatedStepDown.update();
-            check("step-down transformer cannot feed HV cable", outgoingHv.energy == 0f);
+            // MV -> HV step-up (pair1): transformer faces an HV cable (tier2).
+            Ic2TransformerBlock.Ic2TransformerBuild stepUpMH = place(transformerBlock, 1, 6);
+            stepUpMH.pair = Ic2TransformerBlock.PAIR_MV_HV;
+            Ic2CableBlock.Ic2CableBuild hvCable2 = place(hv2Block, 2, 6);
+            stepUpMH.energy = 20f;
+            stepUpMH.update();
+            check("step-up MV->HV feeds the faced HV cable", hvCable2.energy > 0f);
+            check("step-up MV->HV accepts MV input", stepUpMH.acceptsFrom(mvProbe));
+            check("step-up MV->HV rejects HV input", !stepUpMH.acceptsFrom(hvProbe));
 
             check("insulated LV cable has no loss", configuredCable(false, 2, 15f, 0f).loss == 0f);
             check("reinforced HV cable has extended range", configuredCable(true, 20, 25f, .02f).nodeRange == 20);
@@ -149,14 +154,15 @@ public final class EuIntegrationHarness implements ApplicationListener {
             for (int i = 0; i < 220; i++) feederMacerator.update();
             check("conveyor-style input reaches macerator output", feederMacerator.pendingOutputAmount == 2);
 
-            byte[] cableState = save(hvCable);
-            Ic2CableBlock.Ic2CableBuild restoredCable = place(hvBlock, 8, 0);
+            byte[] cableState = save(mvCable);
+            Ic2CableBlock.Ic2CableBuild restoredCable = place(mvBlock, 8, 0);
             restoredCable.read(new arc.util.io.Reads(new DataInputStream(new ByteArrayInputStream(cableState))), (byte)1);
-            check("HV manual links survive save/load", restoredCable.links.size == hvCable.links.size);
-            byte[] transformerState = save(stepDown);
+            check("cable links survive save/load", restoredCable.links.size == mvCable.links.size);
+            byte[] transformerState = save(stepUpLM);
             Ic2TransformerBlock.Ic2TransformerBuild restoredTransformer = place(transformerBlock, 24, 0);
-            restoredTransformer.read(new arc.util.io.Reads(new DataInputStream(new ByteArrayInputStream(transformerState))), (byte)2);
-            check("transformer mode survives save/load", restoredTransformer.mode == Ic2TransformerBlock.MODE_STEP_DOWN);
+            restoredTransformer.read(new arc.util.io.Reads(new DataInputStream(new ByteArrayInputStream(transformerState))), (byte)4);
+            check("transformer pair survives save/load", restoredTransformer.pair == Ic2TransformerBlock.PAIR_LV_MV);
+            check("transformer mode survives save/load", restoredTransformer.mode == Ic2TransformerBlock.MODE_STEP_UP);
 
             // The headless harness has no renderer/GL, so give drawing code a batch to
             // operate on. This lets the selection/placement draw paths actually run and
@@ -170,18 +176,18 @@ public final class EuIntegrationHarness implements ApplicationListener {
             source.drawSelect();
             cable.drawSelect();
             target.drawSelect();
-            hvSource.drawSelect();
-            stepUp.drawSelect();
-            hvCable.drawSelect();
-            stepDown.drawSelect();
-            hvTarget.drawSelect();
+            stepUpLM.drawSelect();
+            mvCable.drawSelect();
+            stepDownML.drawSelect();
+            stepUpMH.drawSelect();
+            hvCable2.drawSelect();
             solar.drawSelect();
             feederMacerator.drawSelect();
             restoredCable.drawSelect();
             restoredTransformer.drawSelect();
             batteryBlock.drawPlace(4, 4, 0, true);
             cableBlock.drawPlace(6, 4, 0, true);
-            hvBlock.drawPlace(8, 2, 0, true);
+            mvBlock.drawPlace(8, 2, 0, true);
             transformerBlock.drawPlace(6, 2, 0, true);
             solarBlock.drawPlace(28, 4, 0, true);
             feederMaceratorBlock.drawPlace(28, 6, 0, true);

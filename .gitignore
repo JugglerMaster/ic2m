@@ -3,3 +3,7 @@ build/
 *.class
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
+
+# Runtime game data / exports
+config/
+mindustry-data-export*.zip

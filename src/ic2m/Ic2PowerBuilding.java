@@ -137,6 +137,25 @@ public class Ic2PowerBuilding extends Building {
     /** Default output side for this block type; -1 = none (omnidirectional). Batteries/transformers override to a side. */
     protected int defaultOutputRotation() { return -1; }
 
+    /** Advance to the next output side (right -> up -> left -> down). */
+    public void cycleOutput() {
+        int next = (outputRotation + 1) & 3;
+        configure(next);
+    }
+
+    protected String outputDirName(int r) {
+        return r < 0 ? "all sides" : r == 0 ? "right" : r == 1 ? "up" : r == 2 ? "left" : "down";
+    }
+
+    /** Adds an "output side" control to a block's config panel (batteries, transformers). */
+    protected void addOutputControl(Table table) {
+        table.row();
+        TextButton btn = new TextButton("", Styles.defaultt);
+        btn.update(() -> btn.setText("Output side: " + outputDirName(outputRotation) + "   (tap to change)"));
+        btn.clicked(() -> cycleOutput());
+        table.add(btn).size(280f, 44f);
+    }
+
     @Override
     public void created() {
         super.created();
@@ -174,6 +193,10 @@ public class Ic2PowerBuilding extends Building {
                         || cb instanceof Ic2TransformerBlock.Ic2TransformerBuild) continue;
                     if (!canConnectEnergy(o)) continue;
                     float d = dx * dx + dy * dy;
+                    // A cable picks its single nearest compatible block within ITS OWN nodeRange.
+                    // The scan above is already bounded by linkRange()==nodeRange, so a cable never
+                    // links beyond its cable range. Non-adjacent (within-range) pairing is allowed;
+                    // a distant machine is only reachable if the cable itself reaches it.
                     if (d < best) { best = d; nearest = cb; }
                 }
             }

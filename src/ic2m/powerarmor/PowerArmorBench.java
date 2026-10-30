@@ -33,7 +33,10 @@ public class PowerArmorBench extends Ic2PowerBlock {
         super(name);
         size = 2;
         solid = true;
-        update = false;
+        // Must be an update block so the config UI opens on tap and the placement
+        // can be picked up/configured. (Configurable, non-update blocks can't be
+        // tapped-open and end up stuck/unremovable in the world.)
+        update = true;
         configurable = true;
         saveConfig = true;
         category = Category.effect;

@@ -7,6 +7,8 @@ import arc.util.io.Reads;
 import arc.util.io.Writes;
 import mindustry.Vars;
 import mindustry.gen.Building;
+import mindustry.gen.Unit;
+import mindustry.graphics.Drawf;
 import mindustry.graphics.Layer;
 import mindustry.graphics.Pal;
 import mindustry.type.ItemStack;
@@ -15,7 +17,8 @@ public class BatteryBlock extends Ic2PowerBlock {
     public BatteryBlock(String name) {
         super(name);
         basePowerCapacity = 500f;
-        rotate = true;
+        configurable = true;
+        saveConfig = true;
     }
 
     public class BatteryBuild extends Ic2PowerBuilding {
@@ -27,6 +30,10 @@ public class BatteryBlock extends Ic2PowerBlock {
 
         @Override
         protected boolean writesOutputState() { return false; }
+
+        @Override
+        protected int defaultOutputRotation() { return 1; } // up by default
+
         @Override
         public void created() {
             super.created();
@@ -53,21 +60,32 @@ public class BatteryBlock extends Ic2PowerBlock {
 
         @Override
         protected boolean canOutputTo(Building other) {
+            if (outputRotation < 0) return true;
             int dx = other.tile.x - tile.x;
             int dy = other.tile.y - tile.y;
-            return D4[rotation][0] == dx && D4[rotation][1] == dy;
+            return D4[outputRotation][0] == dx && D4[outputRotation][1] == dy;
         }
 
-        /** Output direction follows the block's facing; rotating the battery (tap, vanilla config) aims it. */
+        /** When this battery is selected, draw the vanilla selection outline on whichever
+         *  block sits on the output side so the player can see exactly where EU is being sent. */
         @Override
         protected void drawOutputLink() {
-            float tx = (tile.x + D4[rotation][0]) * Vars.tilesize + Vars.tilesize / 2f;
-            float ty = (tile.y + D4[rotation][1]) * Vars.tilesize + Vars.tilesize / 2f;
-            Draw.z(Layer.power + 1f);
-            Draw.color(Pal.remove);
-            Lines.stroke(2f);
-            Lines.line(x, y, tx, ty);
-            Draw.reset();
+            if (outputRotation < 0) return;
+            int ox = tile.x + D4[outputRotation][0];
+            int oy = tile.y + D4[outputRotation][1];
+            Building out = Vars.world.build(ox, oy);
+            if (out != null) {
+                Drawf.selected(out, Pal.accent);
+            } else {
+                // No block on the output side — draw a short stub so the aimed direction is still visible.
+                float tx = (ox + 0.5f) * Vars.tilesize;
+                float ty = (oy + 0.5f) * Vars.tilesize;
+                Draw.z(Layer.power + 1f);
+                Draw.color(Pal.accent);
+                Lines.stroke(2f);
+                Lines.line(x, y, tx, ty);
+                Draw.reset();
+            }
         }
 
         @Override
@@ -76,7 +94,18 @@ public class BatteryBlock extends Ic2PowerBlock {
             table.row();
             table.add("Battery Tier " + (upgradeTier + 1)).left().row();
             table.add("Storage: " + (int) maxEnergy + " EU").left().row();
-            table.add("Output side: rotate the block to aim it").left().row();
+            table.add("Receives EU from all sides, sends it only out the chosen side.").left().row();
+            addOutputControl(table);
+        }
+
+        @Override
+        public Integer config() {
+            return outputRotation;
+        }
+
+        @Override
+        public void configured(Unit builder, Object value) {
+            if (value instanceof Integer i && i >= -1 && i < 4) outputRotation = i;
         }
 
         @Override
@@ -96,12 +125,6 @@ public class BatteryBlock extends Ic2PowerBlock {
             if (tier == 2) return withAlloy(tier, resolveItem("titanium-carbide"), 100);
             if (tier == 3) return withAlloy(tier, resolveItem("thorium-alloy"), 400);
             return new ItemStack[0];
-        }
-
-        @Override
-        public void drawSelect() {
-            super.drawSelect();
-            drawOutputLink();
         }
     }
 }
